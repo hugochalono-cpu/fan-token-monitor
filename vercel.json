@@ -2,16 +2,16 @@
   "version": 2,
   "builds": [
     { "src": "index.html", "use": "@vercel/static" },
-    { "src": "api/*.py",   "use": "@vercel/python" }
+    { "src": "*.py",       "use": "@vercel/python" }
   ],
   "routes": [
-    { "src": "/api/market",  "dest": "/api/market.py"  },
-    { "src": "/api/history", "dest": "/api/history.py" },
-    { "src": "/api/health",  "dest": "/api/health.py"  },
-    { "src": "/(.*)",        "dest": "/index.html"     }
+    { "src": "/api/market",  "dest": "/market.py"  },
+    { "src": "/api/history", "dest": "/history.py" },
+    { "src": "/api/health",  "dest": "/health.py"  },
+    { "src": "/(.*)",        "dest": "/index.html" }
   ],
   "functions": {
-    "api/market.py":  { "maxDuration": 10 },
-    "api/history.py": { "maxDuration": 10 }
+    "market.py":  { "maxDuration": 10 },
+    "history.py": { "maxDuration": 10 }
   }
 }
