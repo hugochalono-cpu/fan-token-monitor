@@ -1,0 +1,2160 @@
+<title>Fan Token Monitor</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════
+   DESIGN TOKENS — dark-first
+   ═══════════════════════════════════════════════════ */
+:root {
+  /* surfaces */
+  --bg:           #1D0238;
+  --surface:      #260440;
+  --card:         #2E0850;
+  --card-h:       #380A60;
+  --border:       #4A1070;
+  --border-s:     #5C1585;
+
+  /* brand */
+  --accent:       #FF0051;
+  --accent-dim:   rgba(255,0,81,.14);
+  --accent-ring:  rgba(255,0,81,.35);
+
+  /* ink */
+  --t1: #FFFFFF;
+  --t2: #CF85FF;
+  --t3: #7B3FA0;
+
+  /* semantic */
+  --buy:          #1BB870;
+  --buy-dim:      rgba(27,184,112,.14);
+  --sell:         #FF0051;
+  --sell-dim:     rgba(255,0,81,.14);
+
+  --sp-good:      #1BB870;
+  --sp-mid:       #F5A020;
+  --sp-bad:       #FF0051;
+
+  /* misc */
+  --r:  5px;
+  --r2: 9px;
+  --ff-disp: 'Barlow Condensed', sans-serif;
+  --ff-body: 'DM Sans', sans-serif;
+  --ff-mono: 'JetBrains Mono', monospace;
+}
+
+/* light theme ─────────────────────────────── */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:       #EDEDED;
+    --surface:  #E0E0E0;
+    --card:     #FFFFFF;
+    --card-h:   #F5F5F5;
+    --border:   #C8C8C8;
+    --border-s: #B0B0B0;
+    --t1: #1D0238;
+    --t2: #40006A;
+    --t3: #8060A0;
+  }
+}
+:root[data-theme="light"] {
+  --bg:       #EDEDED;
+  --surface:  #E0E0E0;
+  --card:     #FFFFFF;
+  --card-h:   #F5F5F5;
+  --border:   #C8C8C8;
+  --border-s: #B0B0B0;
+  --t1: #1D0238;
+  --t2: #40006A;
+  --t3: #8060A0;
+}
+
+/* ═══════════════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; font-size: 14px; }
+body {
+  height: 100%;
+  font-family: var(--ff-body);
+  background: var(--bg);
+  color: var(--t1);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+button { font-family: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ═══════════════════════════════════════════════════
+   APP SHELL
+   ═══════════════════════════════════════════════════ */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ─── HEADER ──────────────────────────────── */
+.hdr {
+  flex-shrink: 0;
+  height: 52px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 40;
+}
+.hdr-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-decoration: none;
+}
+.hdr-chiliz-logo {
+  height: 26px;
+  width: auto;
+
+  flex-shrink: 0;
+}
+.hdr-title-sub {
+  font-family: var(--ff-disp);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--t2);
+  padding-left: 6px;
+  border-left: 1px solid var(--border-s);
+}
+.hdr-icon {
+  width: 28px; height: 28px;
+  background: var(--accent);
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.hdr-title {
+  font-family: var(--ff-disp);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--t1);
+}
+.hdr-sub {
+  font-size: 11px;
+  color: var(--t3);
+  letter-spacing: .04em;
+}
+.hdr-sep { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
+.hdr-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+/* ─── CONTROL BAR ─────────────────────────── */
+.ctrl-bar {
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 7px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.ctrl-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--t3);
+  flex-shrink: 0;
+}
+.toggle-row { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.tog-btn {
+  font-family: var(--ff-disp);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--t2);
+  transition: background .12s, border-color .12s, color .12s;
+}
+.tog-btn:hover { border-color: var(--border-s); color: var(--t1); }
+.tog-btn.on {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ─── SUMMARY STRIP ───────────────────────── */
+.summary {
+  flex-shrink: 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 7px 18px;
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  overflow-x: auto;
+}
+.s-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 20px 0 0;
+  margin-right: 20px;
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.s-item:last-child { border-right: none; }
+.s-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+.s-val {
+  font-family: var(--ff-mono);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--t1);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em;
+}
+.s-sub { font-size: 10px; color: var(--t2); }
+
+/* ─── MAIN SCROLLABLE ─────────────────────── */
+.main {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+/* ─── MARKET TABLE ────────────────────────── */
+.mkt-table {
+  border-collapse: collapse;
+  min-width: max-content;
+  width: 100%;
+}
+.mkt-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+}
+.mkt-table th {
+  background: var(--surface);
+  border-bottom: 2px solid var(--border-s);
+  padding: 0;
+}
+.mkt-table th:first-child {
+  position: sticky; left: 0; z-index: 26;
+  min-width: 124px; width: 124px;
+}
+.mkt-table th:not(:first-child) {
+  min-width: 192px; width: 192px;
+}
+.th-inner {
+  padding: 9px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.th-ex {
+  font-family: var(--ff-disp);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--t1);
+}
+.th-note {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--t3);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+/* ─── TABLE CELLS ─────────────────────────── */
+.mkt-table td {
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 0;
+  vertical-align: top;
+}
+.mkt-table td:first-child {
+  position: sticky; left: 0; z-index: 10;
+  background: var(--surface);
+  border-right: 2px solid var(--border-s);
+  min-width: 124px; width: 124px;
+}
+.mkt-table tr:last-child td { border-bottom: none; }
+
+/* Token label cell */
+.tok-cell {
+  padding: 14px 14px 14px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-left: 3px solid transparent;
+  min-height: 138px;
+  justify-content: center;
+}
+.tok-sym {
+  font-family: var(--ff-disp);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  line-height: 1;
+  color: var(--t1);
+}
+.tok-name {
+  font-size: 10px;
+  color: var(--t3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 88px;
+  letter-spacing: .02em;
+}
+.tok-pair {
+  font-size: 9px;
+  font-family: var(--ff-mono);
+  color: var(--t3);
+  margin-top: 2px;
+}
+
+/* Market card */
+.mkt-card {
+  padding: 11px 14px;
+  min-height: 138px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: background .12s;
+}
+.mkt-card:hover { background: var(--card-h); }
+.mkt-card.sel {
+  background: var(--accent-dim);
+  box-shadow: inset 0 0 0 1px var(--accent-ring);
+}
+
+/* Price row */
+.price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.price-val {
+  font-family: var(--ff-mono);
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--t1);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+}
+.price-dir {
+  font-size: 11px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.dir-up   { color: var(--buy);  }
+.dir-down { color: var(--sell); }
+
+/* Spread badge */
+.sp-badge {
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: .02em;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.sp-good { background: var(--buy-dim);  color: var(--sp-good); }
+.sp-mid  { background: rgba(245,160,32,.14); color: var(--sp-mid);  }
+.sp-bad  { background: var(--sell-dim); color: var(--sp-bad);  }
+
+/* Volume bar */
+.vol-wrap { display: flex; flex-direction: column; gap: 4px; }
+.vol-bar {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  display: flex;
+  overflow: hidden;
+}
+.vol-buy  { background: var(--buy);  transition: width .5s ease; }
+.vol-sell { background: var(--sell); transition: width .5s ease; }
+.vol-nums {
+  display: flex;
+  justify-content: space-between;
+}
+.vol-n {
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.vn-b { color: var(--buy);  }
+.vn-s { color: var(--sell); }
+
+/* Depth mini */
+.dep-mini {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.dep-lbl {
+  font-size: 9px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--t3);
+  flex-shrink: 0;
+}
+.dep-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+  flex: 1;
+}
+.dep-b {
+  flex: 1;
+  border-radius: 1px;
+  min-height: 2px;
+  max-width: 5px;
+}
+.dep-bid { background: rgba(27,184,112,.45); }
+.dep-ask { background: rgba(232,64,64,.45); }
+
+/* Best badges */
+.best-grp { display: flex; gap: 3px; margin-left: auto; }
+.best-tag {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 2px;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-ring);
+}
+.best-tag.vol {
+  color: var(--buy);
+  background: var(--buy-dim);
+  border-color: rgba(27,184,112,.3);
+}
+
+/* ─── HIST BUTTON ON CARDS ──────────────────── */
+.hist-btn {
+  display: block;
+  margin: 6px auto 0;
+  background: var(--border);
+  border: 1px solid var(--border-s);
+  border-radius: var(--r);
+  color: var(--t2);
+  font-size: 11px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+  width: 100%;
+}
+.hist-btn:hover { background: var(--accent-dim); color: var(--accent); border-color: var(--accent-ring); }
+.hist-btn-sel   { background: var(--accent-dim); color: var(--accent); border-color: var(--accent-ring); }
+
+/* ─── TOOLTIP ───────────────────────────────── */
+#hist-tooltip {
+  position: fixed;
+  background: var(--card);
+  border: 1px solid var(--border-s);
+  border-radius: var(--r);
+  padding: 6px 10px;
+  font-size: 11px;
+  font-family: var(--ff-mono);
+  color: var(--t1);
+  pointer-events: none;
+  z-index: 999;
+  display: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+}
+#hist-tooltip .tt-date { color: var(--t2); font-size: 10px; display: block; margin-bottom: 3px; }
+#hist-tooltip .tt-val  { color: var(--t1); font-weight: 500; }
+
+/* ─── HISTORY PANEL ─────────────────────────── */
+.hist-panel {
+  flex-shrink: 0;
+  background: var(--surface);
+  border-top: 2px solid var(--accent-ring);
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .3s cubic-bezier(.4,0,.2,1);
+  position: relative;
+}
+.hist-panel.open { max-height: 340px; }
+.hist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.hist-title-row { display: flex; align-items: center; gap: 10px; }
+.hist-tok-badge {
+  font-family: var(--ff-disp);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: .05em;
+}
+.hist-title { font-size: 12px; font-weight: 600; color: var(--t2); }
+.hist-src   { font-size: 10px; color: var(--t3); }
+.hist-loading, .hist-err {
+  padding: 24px 18px;
+  font-size: 12px;
+  color: var(--t3);
+}
+.hist-err { color: var(--sell); }
+.hist-charts {
+  display: flex;
+  gap: 0;
+  padding: 12px 18px;
+  height: 242px;
+}
+.hist-chart-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 10px;
+  border-right: 1px solid var(--border);
+}
+.hist-chart-block:first-child { padding-left: 0; }
+.hist-chart-block:last-child  { padding-right: 0; border-right: none; }
+.hist-chart-ttl {
+  font-size: 10px;
+  color: var(--t3);
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.hist-svg {
+  flex: 1;
+  width: 100%;
+  overflow: visible;
+}
+.hist-chart-labels {
+  display: flex;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.hist-lbl {
+  font-size: 9px;
+  color: var(--t3);
+  font-family: var(--ff-mono);
+}
+
+/* ─── DETAIL DRAWER ───────────────────────── */
+.drawer {
+  flex-shrink: 0;
+  background: var(--surface);
+  border-top: 2px solid var(--border-s);
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .28s cubic-bezier(.4,0,.2,1);
+  position: relative;
+}
+.drawer.open { max-height: 320px; }
+.drawer-in {
+  padding: 16px 18px;
+  display: flex;
+  gap: 20px;
+  height: 100%;
+}
+
+/* Drawer: info column */
+.dr-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 190px;
+  flex-shrink: 0;
+}
+.dr-pair {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dr-sym {
+  font-family: var(--ff-disp);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  color: var(--t1);
+  line-height: 1;
+}
+.dr-ex {
+  font-family: var(--ff-disp);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--t2);
+  padding-top: 4px;
+}
+.dr-price {
+  font-family: var(--ff-mono);
+  font-size: 28px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--t1);
+  letter-spacing: -.02em;
+}
+.dr-spread-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Drawer: metrics */
+.dr-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 170px;
+  flex-shrink: 0;
+  padding-top: 4px;
+  border-left: 1px solid var(--border);
+  padding-left: 20px;
+}
+.dr-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.dr-key {
+  font-size: 11px;
+  color: var(--t3);
+  white-space: nowrap;
+}
+.dr-mval {
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  color: var(--t1);
+  font-variant-numeric: tabular-nums;
+}
+.dr-mval.buy  { color: var(--buy);  }
+.dr-mval.sell { color: var(--sell); }
+
+/* Drawer: chart */
+.dr-chart {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.dr-chart-ttl {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+#depth-canvas {
+  width: 100%;
+  flex: 1;
+  display: block;
+  border-radius: var(--r);
+}
+
+/* close btn */
+.dr-close {
+  position: absolute;
+  top: 10px; right: 14px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--t3);
+  font-size: 13px;
+  padding: 2px 8px;
+  line-height: 1.4;
+  transition: color .12s, border-color .12s;
+}
+.dr-close:hover { color: var(--t1); border-color: var(--border-s); }
+
+/* ─── BUTTONS ──────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 11px;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--t1);
+  transition: background .12s, border-color .12s;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--card-h); border-color: var(--border-s); }
+.btn-acc {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn-acc:hover { opacity: .88; }
+.btn-ico { padding: 5px 7px; }
+.refresh-cd {
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  color: var(--t3);
+  font-variant-numeric: tabular-nums;
+  width: 72px;
+  text-align: right;
+}
+
+/* ─── STATUS BADGE ─────────────────────────── */
+.status-badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 3px;
+  letter-spacing: .03em;
+  white-space: nowrap;
+}
+.st-live    { background: var(--buy-dim);         color: var(--buy);    }
+.st-sim     { background: rgba(245,160,32,.14);   color: var(--sp-mid); }
+.st-loading { background: var(--border);          color: var(--t2);     }
+.st-err     { background: var(--sell-dim);        color: var(--sell);   }
+
+/* ─── FOOTER ───────────────────────────────── */
+.footer {
+  flex-shrink: 0;
+  padding: 5px 18px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 10px;
+  color: var(--t3);
+}
+
+/* ─── ANIMATIONS ───────────────────────────── */
+@keyframes fUp   { 0%{color:var(--buy)}  100%{color:var(--t1)} }
+@keyframes fDown { 0%{color:var(--sell)} 100%{color:var(--t1)} }
+.fl-up   { animation: fUp   .9s ease-out forwards; }
+.fl-down { animation: fDown .9s ease-out forwards; }
+
+/* ─── REQUIREMENT ALERTS ─────────────────── */
+@keyframes reqGlow {
+  0%, 100% { box-shadow: inset 0 0 0 1.5px rgba(255,0,81,.3); }
+  50%       { box-shadow: inset 0 0 0 2px rgba(255,0,81,.95), 0 0 14px rgba(255,0,81,.22); }
+}
+.mkt-card.req-fail {
+  animation: reqGlow 1.5s ease-in-out infinite;
+  /* désactive la transition background pour ne pas étouffer l'animation */
+  transition: none;
+}
+.req-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(255,0,81,.2);
+}
+.req-badge {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: var(--sell-dim);
+  color: var(--sell);
+  border: 1px solid rgba(255,0,81,.28);
+  white-space: nowrap;
+  cursor: default;
+}
+/* Header column indicator */
+.req-header-tag {
+  font-size: 8px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: rgba(255,0,81,.12);
+  color: var(--sell);
+  border: 1px solid rgba(255,0,81,.25);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  display: inline-block;
+  margin-top: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-up, .fl-down { animation: none; }
+  * { transition: none !important; }
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-s); }
+
+/* ─── TOKEN OVERVIEW STRIP ──────────────── */
+.ov-strip {
+  flex-shrink: 0;
+  background: var(--bg);
+  border-bottom: 2px solid var(--border-s);
+  overflow-x: auto;
+  overflow-y: hidden;
+  display: flex;
+  gap: 0;
+  height: 142px;
+}
+.ov-loading-msg {
+  font-size: 11px;
+  color: var(--t3);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+.ov-card {
+  flex-shrink: 0;
+  width: 158px;
+  padding: 9px 11px 7px;
+  border-right: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background .12s;
+}
+.ov-card:hover { background: var(--card); }
+.ov-head {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.ov-sym {
+  font-family: var(--ff-disp);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--t1);
+  flex-shrink: 0;
+}
+.ov-price {
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  color: var(--t1);
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.ov-pct {
+  font-size: 9px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ov-sparks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.ov-spark-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+.ov-spark-lbl {
+  font-size: 8px;
+  color: var(--t3);
+  width: 20px;
+  flex-shrink: 0;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+.ov-spark-wrap {
+  flex: 1;
+  height: 20px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+.ov-spark-wrap svg { width: 100%; height: 20px; display: block; }
+.ov-no-data {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: var(--t3);
+}
+</style>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="hdr">
+    <div class="hdr-logo">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAkCAYAAACAGLraAAACi0lEQVR42pWWv2sUURDH592dSiQSf4AihJAziUGxstBKxFTWEbHRgBqDmsJKUCGNtoqd+AcEhUjAKMKJkiKxCigWWljYRDHGn6Diac7bj4Xfd4x7u9FbOGZ3Zt73fd93Z+bWgDLwGNhtZgaUrJULOMyfax7Y0TIIsA6YFsgCsE3+Qisga4GKY9IHhP8CAYqyB4GaQF4CK/Qr/AtgJXAB+KLFH4HTqZywHEA8P8BtoEf+buAssGZZTbRwETjqfMeAN4rNAu25mgAHgD7ddwITNF8PpUcx9ziqh9du0QRwxz2PZ9YIUACuuMRF4LiL33Wx800gwJBLmALKMUngbcCc4gmw179+A54AdeCWAy2laqQLeO9qpF3gwYBPCgzHukgdMYINOqaXGxsAb0XtkVRuUtqBTArgB9AbGdxwyNeylI50ga1AVbnXY7AMvJMOAKM5IFGPm2L8Adgcg/sEUJMd+Etp3YvFfsd41J/vpJx1KV725Rt1ATrEOAHupUW66tBndPZCuivVHwCvGgEHUnEggzl1EfulWjAzCyFgZok2GjGzr2aGmZ2QL8bi612SLTbohRASoBhCmDez+0reCXQoFhzQetlqur+DEuf0vMHMOnVfEFDJzHrlW2gaEDpONVI0s7YIIPDtZrZFvmd5A7NLtiY9hB0wsyMCNjObzpvQk27Er471AGxyzfcN6M6aTAF4qqSKfKtkx91cmLKs0Q1sBD4rccxV4oh8S7IDefT3uEK6JN8hlfhP+R+ke8VX2xkl/dKCGUe7BnwH+pvGvGMQ50PNMUkc9aGm3VMt+8J1ZSIWcVacyx3tsv3aOdGiumNzKvfbwQH0ZPwrzQK7cmlngFzU0HwODDt/5lfLb6xfaLWEaeIPAAAAAElFTkSuQmCC"
+           alt="Chiliz"
+           class="hdr-chiliz-logo">
+
+      <span class="hdr-title hdr-title-sub">Fan Token Monitor</span>
+    </div>
+    <div class="hdr-sep"></div>
+    <span class="hdr-sub">Chiliz Exchange</span>
+    <div class="hdr-right">
+      <span class="status-badge st-loading" id="status-badge">⏳ Connecting…</span>
+      <span class="refresh-cd" id="cd">Refresh 30s</span>
+      <button class="btn btn-acc" onclick="manualRefresh()">
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+          <path d="M9.5 5.5A4 4 0 1 1 5.5 1.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M5.5 0 7.5 2.2 5 3.2z" fill="white"/>
+        </svg>
+        Refresh
+      </button>
+      <button class="btn btn-ico" id="theme-btn" onclick="toggleTheme()" title="Theme">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" id="theme-ic">
+          <circle cx="6.5" cy="6.5" r="2.5" stroke="currentColor" stroke-width="1.4"/>
+          <line x1="6.5" y1="0.5" x2="6.5" y2="2"   stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="6.5" y1="11"  x2="6.5" y2="12.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="0.5" y1="6.5" x2="2"   y2="6.5"  stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="11"  y1="6.5" x2="12.5" y2="6.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="2.4" y1="2.4" x2="3.4" y2="3.4"  stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="9.6" y1="9.6" x2="10.6" y2="10.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="2.4" y1="10.6" x2="3.4" y2="9.6"  stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="9.6" y1="3.4" x2="10.6" y2="2.4"  stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTROLS -->
+  <div class="ctrl-bar">
+    <span class="ctrl-label">Exchanges</span>
+    <div class="toggle-row" id="ex-toggles"></div>
+    <div class="hdr-sep"></div>
+    <span class="ctrl-label">Tokens</span>
+    <div class="toggle-row" id="tok-toggles"></div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="summary">
+    <div class="s-item">
+      <span class="s-lbl">Volume 24h</span>
+      <span class="s-val" id="sv-vol">—</span>
+      <span class="s-sub">all pairs</span>
+    </div>
+    <div class="s-item">
+      <span class="s-lbl">Best Spread</span>
+      <span class="s-val" id="sv-sp">—</span>
+      <span class="s-sub" id="sv-sp-sub">—</span>
+    </div>
+    <div class="s-item">
+      <span class="s-lbl">Most Active Pair</span>
+      <span class="s-val" id="sv-top">—</span>
+      <span class="s-sub" id="sv-top-sub">—</span>
+    </div>
+    <div class="s-item">
+      <span class="s-lbl">Active Pairs</span>
+      <span class="s-val" id="sv-pairs">—</span>
+      <span class="s-sub">tokens × exchanges</span>
+    </div>
+    <div class="s-item" style="margin-left:auto;border-right:none">
+      <span class="s-lbl">Last Update</span>
+      <span class="s-val" id="sv-ts">—</span>
+      <span class="s-sub">simulated data</span>
+    </div>
+  </div>
+
+  <!-- TOKEN OVERVIEW -->
+  <div class="ov-strip" id="ov-strip">
+    <div class="ov-loading-msg" id="ov-loading">⏳ Loading token overview…</div>
+  </div>
+
+  <!-- MATRIX -->
+  <div class="main" id="main">
+    <table class="mkt-table" id="mkt-tbl">
+      <thead>
+        <tr id="tbl-head">
+          <th>
+            <div class="th-inner">
+              <span class="th-note">Token</span>
+            </div>
+          </th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+  </div>
+
+  <!-- DETAIL DRAWER -->
+  <div class="drawer" id="drawer">
+    <button class="dr-close" onclick="closeDrawer()">✕ Close</button>
+    <div class="drawer-in">
+
+      <div class="dr-info">
+        <div class="dr-pair">
+          <span class="dr-sym" id="dr-sym">—</span>
+          <span class="dr-ex"  id="dr-ex">—</span>
+        </div>
+        <div class="dr-price" id="dr-price">—</div>
+        <div class="dr-spread-row">
+          <span class="sp-badge" id="dr-sp-badge">—</span>
+          <span style="font-size:11px;color:var(--t3)">spread</span>
+        </div>
+      </div>
+
+      <div class="dr-metrics">
+        <div class="dr-row"><span class="dr-key">Bid</span><span class="dr-mval" id="dr-bid">—</span></div>
+        <div class="dr-row"><span class="dr-key">Ask</span><span class="dr-mval" id="dr-ask">—</span></div>
+        <div class="dr-row"><span class="dr-key">Buy Vol 24h</span><span class="dr-mval buy"  id="dr-bvol">—</span></div>
+        <div class="dr-row"><span class="dr-key">Sell Vol 24h</span><span class="dr-mval sell" id="dr-svol">—</span></div>
+        <div class="dr-row"><span class="dr-key">Buy/Sell Ratio</span><span class="dr-mval" id="dr-ratio">—</span></div>
+        <div class="dr-row"><span class="dr-key">Total Vol 24h</span><span class="dr-mval" id="dr-tvol">—</span></div>
+        <div class="dr-row"><span class="dr-key">Depth ±10</span><span class="dr-mval" id="dr-depth">—</span></div>
+      </div>
+
+      <div class="dr-chart">
+        <span class="dr-chart-ttl">Market Depth (Order Book)</span>
+        <canvas id="depth-canvas"></canvas>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- HISTORY PANEL -->
+  <div class="hist-panel" id="hist-panel">
+    <div class="hist-header">
+      <div class="hist-title-row">
+        <span class="hist-tok-badge" id="hist-tok-badge"></span>
+        <span class="hist-title" id="hist-title">60-Day History</span>
+        <span class="hist-src">Source: Binance (daily klines)</span>
+      </div>
+      <button class="dr-close" onclick="closeHistory()">✕ Close</button>
+    </div>
+    <div class="hist-loading" id="hist-loading">⏳ Loading historical data…</div>
+    <div class="hist-charts" id="hist-charts" style="display:none">
+      <div class="hist-chart-block">
+        <div class="hist-chart-ttl">Price (USDT)</div>
+        <svg class="hist-svg" id="hist-price-svg" viewBox="0 0 500 120" preserveAspectRatio="none"></svg>
+        <div class="hist-chart-labels" id="hist-price-labels"></div>
+      </div>
+      <div class="hist-chart-block">
+        <div class="hist-chart-ttl">Total Volume (USDT)</div>
+        <svg class="hist-svg" id="hist-vol-svg" viewBox="0 0 500 120" preserveAspectRatio="none"></svg>
+        <div class="hist-chart-labels" id="hist-vol-labels"></div>
+      </div>
+      <div class="hist-chart-block">
+        <div class="hist-chart-ttl">Daily Volatility % (liquidity proxy)</div>
+        <svg class="hist-svg" id="hist-sp-svg" viewBox="0 0 500 120" preserveAspectRatio="none"></svg>
+        <div class="hist-chart-labels" id="hist-sp-labels"></div>
+      </div>
+    </div>
+    <div class="hist-err" id="hist-err" style="display:none">
+      ⚠ Could not load historical data — API unreachable.
+    </div>
+  </div>
+
+  <!-- TOOLTIP -->
+  <div id="hist-tooltip"><span class="tt-date"></span><span class="tt-val"></span></div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span id="footer-note">⏳ Connecting to API…</span>
+    <span id="ft-ts"></span>
+  </div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   CONSTANTS
+   ═══════════════════════════════════════════════════ */
+const TOKEN_META = {
+  ACM:   { name: 'AC Milan',         club: '#C8102E', base: 2.50 },
+  AFC:   { name: 'Arsenal',          club: '#EF0107', base: 5.00 },
+  ALA:   { name: 'Atalanta',         club: '#1E6DB4', base: 0.80 },
+  AM:    { name: 'Atlético Mineiro', club: '#941B80', base: 0.50 },
+  ARG:   { name: 'Argentina',        club: '#75AADB', base: 1.20 },
+  ASR:   { name: 'AS Roma',          club: '#8B1A4A', base: 0.90 },
+  ATM:   { name: 'Atlético Madrid',  club: '#CE3524', base: 2.20 },
+  BAR:   { name: 'Barcelona',        club: '#A50044', base: 3.00 },
+  CITY:  { name: 'Manchester City',  club: '#6CABDD', base: 3.50 },
+  GAL:   { name: 'Galatasaray',      club: '#F8A81F', base: 1.80 },
+  INTER: { name: 'Inter Milan',      club: '#0B1560', base: 2.80 },
+  ITA:   { name: 'Nazionale Italia', club: '#0066CC', base: 0.70 },
+  JUV:   { name: 'Juventus',         club: '#8C8A60', base: 3.10 },
+  MENGO: { name: 'Flamengo',         club: '#CC0000', base: 1.50 },
+  NAP:   { name: 'Napoli',           club: '#087AC1', base: 1.10 },
+  OG:    { name: 'Team OG',          club: '#3A3A4A', base: 0.60 },
+  POR:   { name: 'FC Porto',         club: '#004DA8', base: 1.40 },
+  PSG:   { name: 'Paris SG',         club: '#004170', base: 3.70 },
+  SPURS: { name: 'Tottenham',        club: '#132257', base: 2.10 },
+  TRA:   { name: 'Trabzonspor',      club: '#7B2333', base: 0.40 },
+};
+const EX_META = {
+  Binance:  { spBase: .080, volBase: 2_900_000, tier: 1 },
+  Bybit:    { spBase: .110, volBase: 1_950_000, tier: 1 },
+  OKX:      { spBase: .095, volBase: 2_200_000, tier: 1 },
+  Bitget:   { spBase: .135, volBase: 1_450_000, tier: 2 },
+  'Gate.io':{ spBase: .190, volBase:   870_000, tier: 2 },
+};
+const ALL_TOKS = Object.keys(TOKEN_META);
+const ALL_EXS  = Object.keys(EX_META);
+
+/* ═══════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════ */
+const S = {
+  activeToks: new Set(ALL_TOKS),
+  activeExs:  new Set(ALL_EXS),
+  data:        {},        // S.data[tok][ex]
+  sel:         null,      // { tok, ex }
+  countdown:   30,
+  apiOk:       false,     // true après le 1er fetch réussi
+  history:     {},        // S.history[tok][ex] = [{ts,close,vol,...}]
+  histTok:     null,      // token du panneau historique ouvert
+  histEx:      null,      // exchange du panneau historique ouvert
+};
+
+/* ═══════════════════════════════════════════════════
+   DATA ENGINE
+   ═══════════════════════════════════════════════════ */
+function r(lo, hi) { return lo + Math.random() * (hi - lo); }
+
+/* ── Données simulées (fallback) ── */
+function genDataSim() {
+  for (const tok of ALL_TOKS) {
+    if (!S.data[tok]) S.data[tok] = {};
+    const tm = TOKEN_META[tok];
+    for (const ex of ALL_EXS) {
+      const em = EX_META[ex];
+      const prev = S.data[tok][ex];
+      const prevP = prev ? prev.price : tm.base;
+      const price = prevP * (1 + r(-.005, .005));
+      const sp    = em.spBase * r(.65, 1.45) / 100;
+      const bid   = price * (1 - sp / 2);
+      const ask   = price * (1 + sp / 2);
+      const tot   = em.volBase * r(.6, 1.4) * price;
+      const bRat  = r(.37, .63);
+      let d10b = 0, d10a = 0;
+      for (let i = 1; i <= 10; i++) {
+        const dec = Math.exp(-i * .09);
+        d10b += r(6000, 55000) * dec * 1.4;
+        d10a += r(6000, 55000) * dec;
+      }
+      S.data[tok][ex] = {
+        price, bid, ask,
+        spread: sp * 100,
+        bVol: tot * bRat,
+        sVol: tot * (1 - bRat),
+        d10:  (d10b + d10a) * price,
+        dir:  !prev ? 'f' : price > prev.price ? 'u' : price < prev.price ? 'd' : 'f',
+        bids: [], asks: [],
+      };
+    }
+  }
+}
+
+/* ── Fetch données réelles depuis le proxy ── */
+async function fetchData() {
+  try {
+    const resp = await fetch('/api/market', { signal: AbortSignal.timeout(12000) });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const raw = await resp.json();
+
+    for (const tok of ALL_TOKS) {
+      if (!S.data[tok]) S.data[tok] = {};
+      for (const ex of ALL_EXS) {
+        const d    = raw[tok]?.[ex];
+        const prev = S.data[tok][ex];
+        if (!d || !d.price || d.price <= 0) {
+          S.data[tok][ex] = null; // paire non listée sur cet exchange
+          continue;
+        }
+        const prevP = prev?.price ?? d.price;
+        const topBV = (d.bids || []).slice(0,10).reduce((s,[p,q])=>s+p*q, 0);
+        const topAV = (d.asks || []).slice(0,10).reduce((s,[p,q])=>s+p*q, 0);
+        S.data[tok][ex] = {
+          price:  d.price,
+          bid:    d.bid,
+          ask:    d.ask,
+          spread: d.spread,
+          bVol:   d.buyVol,
+          sVol:   d.sellVol,
+          d10:    topBV + topAV,
+          dir:    d.price > prevP ? 'u' : d.price < prevP ? 'd' : 'f',
+          bids:   d.bids || [],
+          asks:   d.asks || [],
+        };
+      }
+    }
+    S.apiOk = true;
+    setStatus('live');
+    return true;
+  } catch (e) {
+    setStatus('sim');
+    return false;
+  }
+}
+
+/* ── Statut de connexion ── */
+function setStatus(mode) {
+  const el = document.getElementById('status-badge');
+  const fn = document.getElementById('footer-note');
+  if (!el) return;
+  const M = {
+    live:    { cls: 'st-live',    txt: '🟢 Live Data',      note: '✅ Live data via public exchange APIs' },
+    sim:     { cls: 'st-sim',     txt: '🟡 Simulated Data',  note: '⚠ API unavailable — check your connection' },
+    loading: { cls: 'st-loading', txt: '⏳ Connecting…',        note: '⏳ Connecting to API…' },
+  };
+  const m = M[mode] || M.loading;
+  el.className = 'status-badge ' + m.cls;
+  el.textContent = m.txt;
+  if (fn) fn.textContent = m.note;
+}
+
+/* ── Depth chart : données réelles si disponibles ── */
+function genDepth(tok, ex) {
+  const d   = S.data[tok]?.[ex];
+  const mid = d?.price ?? TOKEN_META[tok].base;
+
+  if (d?.bids?.length > 0 && d?.asks?.length > 0) {
+    // Carnet d'ordres réel : calcul cumulatif
+    let bc = 0, ac = 0;
+    const bids = d.bids.map(([p,q]) => { bc += q; return { p, c: bc }; }).reverse();
+    const asks = d.asks.map(([p,q]) => { ac += q; return { p, c: ac }; });
+    return { bids, asks, mid };
+  }
+
+  // Fallback simulé
+  const LV = 26, bids = [], asks = [];
+  let bcc = 0, acc = 0;
+  for (let i = 1; i <= LV; i++) {
+    const dec = Math.exp(-i * .07);
+    bcc += r(7000, 58000) * dec * 1.5;
+    acc += r(7000, 58000) * dec;
+    bids.push({ p: mid * (1 - i * .0011), c: bcc });
+    asks.push({ p: mid * (1 + i * .0011), c: acc });
+  }
+  return { bids: bids.reverse(), asks, mid };
+}
+
+/* ═══════════════════════════════════════════════════
+   FORMATTING
+   ═══════════════════════════════════════════════════ */
+function fP(v) {
+  return v >= 100 ? '$' + v.toFixed(2)
+       : v >= 1   ? '$' + v.toFixed(4)
+                  : '$' + v.toFixed(5);
+}
+function fV(v) {
+  return v >= 1e6 ? '$' + (v/1e6).toFixed(2) + 'M'
+       : v >= 1e3 ? '$' + (v/1e3).toFixed(1) + 'K'
+                  : '$' + v.toFixed(0);
+}
+function fSp(v) { return v.toFixed(4) + '%'; }
+function spClass(v) { return v < .12 ? 'sp-good' : v < .22 ? 'sp-mid' : 'sp-bad'; }
+function nowStr() {
+  return new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+/* ═══════════════════════════════════════════════════
+   SUMMARY
+   ═══════════════════════════════════════════════════ */
+function updateSummary() {
+  let totVol = 0, bestSp = Infinity, bestSpLbl = '', topVol = 0, topLbl = '';
+  const aToks = [...S.activeToks], aExs = [...S.activeExs];
+
+  for (const t of aToks) for (const e of aExs) {
+    const d = S.data[t]?.[e]; if (!d) continue;
+    totVol += d.bVol + d.sVol;
+    if (d.spread < bestSp) { bestSp = d.spread; bestSpLbl = `${t} / ${e}`; }
+    const v = d.bVol + d.sVol;
+    if (v > topVol) { topVol = v; topLbl = `${t} / ${e}`; }
+  }
+
+  document.getElementById('sv-vol').textContent   = fV(totVol);
+  document.getElementById('sv-sp').textContent    = bestSp < Infinity ? fSp(bestSp) : '—';
+  document.getElementById('sv-sp-sub').textContent = bestSpLbl || '—';
+  document.getElementById('sv-top').textContent   = fV(topVol);
+  document.getElementById('sv-top-sub').textContent = topLbl || '—';
+  document.getElementById('sv-pairs').textContent = `${aToks.length} × ${aExs.length}`;
+  const ts = nowStr();
+  document.getElementById('sv-ts').textContent = ts;
+  document.getElementById('ft-ts').textContent = ts;
+}
+
+/* ═══════════════════════════════════════════════════
+   BUILD TABLE
+   ═══════════════════════════════════════════════════ */
+function buildTable() {
+  const aToks = [...S.activeToks], aExs = [...S.activeExs];
+
+  // Compute bests per token row
+  const bestSp  = {}, bestVol = {};
+  for (const t of aToks) {
+    let bS = Infinity, bSex = '', bV = 0, bVex = '';
+    for (const e of aExs) {
+      const d = S.data[t]?.[e]; if (!d) continue;
+      if (d.spread < bS) { bS = d.spread; bSex = e; }
+      const v = d.bVol + d.sVol;
+      if (v > bV) { bV = v; bVex = e; }
+    }
+    bestSp[t]  = bSex;
+    bestVol[t] = bVex;
+  }
+
+  // Header
+  const head = document.getElementById('tbl-head');
+  head.innerHTML = `<th><div class="th-inner"><span class="th-note" style="font-family:var(--ff-body);font-size:10px;letter-spacing:.07em">TOKEN / USDT</span></div></th>`
+    + aExs.map(e => {
+        const hasReqs = !!REQS[e];
+        const reqCount = hasReqs ? REQS[e].length : 0;
+        const reqTag = hasReqs
+          ? `<span class="req-header-tag">${reqCount} criteria</span>`
+          : `<span style="font-size:8px;color:var(--t3);letter-spacing:.04em">No criteria</span>`;
+        return `<th><div class="th-inner">
+          <span class="th-ex">${e}</span>
+          <span class="th-note">${aToks.length} pairs</span>
+          ${reqTag}
+        </div></th>`;
+      }).join('');
+
+  // Body
+  const body = document.getElementById('tbl-body');
+  body.innerHTML = aToks.map(tok => {
+    const tm = TOKEN_META[tok];
+    const isSelTok = S.sel?.tok === tok;
+
+    const cells = aExs.map(ex => {
+      const d = S.data[tok]?.[ex];
+      if (!d) {
+        const label = S.apiOk ? 'Not Listed' : '—';
+        const labelColor = S.apiOk ? 'var(--sell)' : 'var(--t3)';
+        return `<td><div style="min-height:138px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:${labelColor};font-size:11px;opacity:.7">${label}</div></td>`;
+      }
+
+      const isSel   = isSelTok && S.sel?.ex === ex;
+      const totV    = d.bVol + d.sVol;
+      const bPct    = Math.round(d.bVol / totV * 100);
+      const sPct    = 100 - bPct;
+      const scls    = spClass(d.spread);
+      const arrow   = d.dir === 'u' ? '▲' : d.dir === 'd' ? '▼' : '';
+      const acls    = d.dir === 'u' ? 'dir-up' : d.dir === 'd' ? 'dir-down' : '';
+      const isBstSp  = bestSp[tok]  === ex;
+      const isBstVol = bestVol[tok] === ex;
+
+      // Requirements check
+      const failReqs = checkReqs(tok, ex);
+      const reqBadgesHtml = failReqs.length > 0
+        ? `<div class="req-badges">${failReqs.map(r =>
+            `<span class="req-badge" title="${r.label}">⚠ ${r.short}</span>`
+          ).join('')}</div>`
+        : '';
+
+      // Depth mini bars: 4 bids + 4 asks with random heights
+      const barHs = [85,65,45,28,28,45,65,85];
+      const depBars = barHs.map((h,i) =>
+        `<div class="dep-b ${i<4?'dep-bid':'dep-ask'}" style="height:${h}%"></div>`
+      ).join('');
+
+      const badges = (isBstSp || isBstVol)
+        ? `<div class="best-grp">${isBstSp?'<span class="best-tag">↓ Spread</span>':''}${isBstVol?'<span class="best-tag vol">↑ Vol</span>':''}</div>`
+        : '';
+
+      return `<td>
+        <div class="mkt-card${isSel?' sel':''}${failReqs.length > 0 && !isSel ? ' req-fail' : ''}" data-tok="${tok}" data-ex="${ex}" onclick="selectCell('${tok}','${ex}')">
+          <div class="price-row">
+            <span class="price-val" id="pv-${tok}-${ex}">${fP(d.price)}</span>
+            <span class="price-dir ${acls}">${arrow}</span>
+            <span class="sp-badge ${scls}">${fSp(d.spread)}</span>
+          </div>
+          <div class="vol-wrap">
+            <div class="vol-bar">
+              <div class="vol-buy"  style="width:${bPct}%"></div>
+              <div class="vol-sell" style="width:${sPct}%"></div>
+            </div>
+            <div class="vol-nums">
+              <span class="vol-n vn-b">${fV(d.bVol)}</span>
+              <span class="vol-n vn-s">${fV(d.sVol)}</span>
+            </div>
+          </div>
+          <div class="dep-mini">
+            <span class="dep-lbl">Depth</span>
+            <div class="dep-bars">${depBars}</div>
+            ${badges}
+          </div>
+          <button class="hist-btn${S.histTok===tok&&S.histEx===ex?' hist-btn-sel':''}" onclick="event.stopPropagation();openHistory('${tok}','${ex}')" title="60d History">📈</button>
+          ${reqBadgesHtml}
+        </div>
+      </td>`;
+    }).join('');
+
+    return `<tr>
+      <td>
+        <div class="tok-cell" style="border-left-color:${tm.club}">
+          <span class="tok-sym">${tok}</span>
+          <span class="tok-name">${tm.name}</span>
+          <span class="tok-pair">${tok}USDT</span>
+        </div>
+      </td>
+      ${cells}
+    </tr>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════
+   CELL SELECTION & DRAWER
+   ═══════════════════════════════════════════════════ */
+function selectCell(tok, ex) {
+  if (S.sel?.tok === tok && S.sel?.ex === ex) { closeDrawer(); return; }
+  S.sel = { tok, ex };
+  openDrawer();
+}
+
+function openDrawer() {
+  const { tok, ex } = S.sel;
+  const d = S.data[tok][ex];
+
+  document.getElementById('dr-sym').textContent  = tok;
+  document.getElementById('dr-ex').textContent   = ex;
+  document.getElementById('dr-price').textContent = fP(d.price);
+
+  const spB = document.getElementById('dr-sp-badge');
+  spB.textContent = fSp(d.spread);
+  spB.className = 'sp-badge ' + spClass(d.spread);
+
+  document.getElementById('dr-bid').textContent   = fP(d.bid);
+  document.getElementById('dr-ask').textContent   = fP(d.ask);
+  document.getElementById('dr-bvol').textContent  = fV(d.bVol);
+  document.getElementById('dr-svol').textContent  = fV(d.sVol);
+  document.getElementById('dr-tvol').textContent  = fV(d.bVol + d.sVol);
+  document.getElementById('dr-depth').textContent = fV(d.d10);
+
+  const ratio = d.bVol / d.sVol;
+  document.getElementById('dr-ratio').textContent = ratio.toFixed(2) + ':1 A/V';
+
+  document.getElementById('drawer').classList.add('open');
+  buildTable();
+  setTimeout(() => drawDepth(tok, ex), 40);
+}
+
+function closeDrawer() {
+  S.sel = null;
+  document.getElementById('drawer').classList.remove('open');
+  buildTable();
+}
+
+/* ═══════════════════════════════════════════════════
+   DEPTH CHART (Canvas)
+   ═══════════════════════════════════════════════════ */
+function drawDepth(tok, ex) {
+  const canvas = document.getElementById('depth-canvas');
+  const rect   = canvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = rect.width  * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+
+  const { bids, asks, mid } = genDepth(tok, ex);
+  const allP = [...bids.map(b=>b.p), ...asks.map(a=>a.p)];
+  const allC = [...bids.map(b=>b.c), ...asks.map(a=>a.c)];
+  const minP = Math.min(...allP), maxP = Math.max(...allP);
+  const maxC = Math.max(...allC);
+
+  const isDk = document.documentElement.dataset.theme !== 'light'
+    && !(window.matchMedia('(prefers-color-scheme: light)').matches && !document.documentElement.dataset.theme);
+
+  const surf  = isDk ? '#0F1128' : '#FFFFFF';
+  const grid  = isDk ? 'rgba(34,38,64,.7)'   : 'rgba(195,205,230,.7)';
+  const txtC  = isDk ? '#404868'              : '#8890B8';
+  const midC  = isDk ? 'rgba(232,73,15,.7)'  : 'rgba(200,50,0,.7)';
+
+  const P = { t:14, r:8, b:30, l:8 };
+  const CW = W - P.l - P.r, CH = H - P.t - P.b;
+
+  const px = p => P.l + (p - minP) / (maxP - minP) * CW;
+  const py = c => P.t + CH * (1 - c / maxC);
+
+  // Background
+  ctx.fillStyle = surf;
+  ctx.fillRect(0, 0, W, H);
+
+  // Horizontal grid lines
+  ctx.strokeStyle = grid;
+  ctx.lineWidth = .5;
+  for (let i = 0; i <= 4; i++) {
+    const y = P.t + CH / 4 * i;
+    ctx.beginPath(); ctx.moveTo(P.l, y); ctx.lineTo(W - P.r, y); ctx.stroke();
+  }
+
+  // ─ Bid area ─
+  ctx.beginPath();
+  // bids[0] = farthest (lowest price, highest cum); bids[last] = nearest mid
+  ctx.moveTo(px(bids[0].p), py(0));
+  for (const b of bids) ctx.lineTo(px(b.p), py(b.c));
+  ctx.lineTo(px(bids[bids.length-1].p), py(0));
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(27,184,112,.13)';
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(px(bids[0].p), py(0));
+  for (const b of bids) ctx.lineTo(px(b.p), py(b.c));
+  ctx.strokeStyle = 'rgba(27,184,112,.75)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // ─ Ask area ─
+  // asks[0] = nearest mid (lowest cum); asks[last] = farthest
+  ctx.beginPath();
+  ctx.moveTo(px(asks[0].p), py(0));
+  for (const a of asks) ctx.lineTo(px(a.p), py(a.c));
+  ctx.lineTo(px(asks[asks.length-1].p), py(0));
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(232,64,64,.13)';
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(px(asks[0].p), py(0));
+  for (const a of asks) ctx.lineTo(px(a.p), py(a.c));
+  ctx.strokeStyle = 'rgba(232,64,64,.75)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // ─ Mid price line ─
+  const mx = px(mid);
+  ctx.setLineDash([3, 3]);
+  ctx.strokeStyle = midC;
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(mx, P.t); ctx.lineTo(mx, P.t + CH); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ─ Labels ─
+  ctx.font = `10px 'JetBrains Mono', monospace`;
+  ctx.fillStyle = txtC;
+  ctx.textAlign = 'center';
+  for (let i = 0; i <= 4; i++) {
+    const p = minP + (maxP - minP) * (i / 4);
+    ctx.fillText(fP(p), P.l + CW * (i / 4), H - 6);
+  }
+
+  // Mid label
+  ctx.fillStyle = isDk ? 'rgba(232,73,15,.9)' : 'rgba(200,50,0,.9)';
+  ctx.fillText('Mid ' + fP(mid), mx, P.t + 11);
+
+  // Bid / Ask labels
+  ctx.font = `10px 'DM Sans', sans-serif`;
+  ctx.fillStyle = 'rgba(27,184,112,.7)';
+  ctx.textAlign = 'left';
+  ctx.fillText('Bids', P.l + 4, P.t + 22);
+  ctx.fillStyle = 'rgba(232,64,64,.7)';
+  ctx.textAlign = 'right';
+  ctx.fillText('Asks', W - P.r - 4, P.t + 22);
+}
+
+/* ═══════════════════════════════════════════════════
+   TOGGLES
+   ═══════════════════════════════════════════════════ */
+function buildToggles() {
+  document.getElementById('ex-toggles').innerHTML = ALL_EXS.map(e =>
+    `<button class="tog-btn${S.activeExs.has(e)?' on':''}" onclick="toggleEx('${e}')">${e}</button>`
+  ).join('');
+  document.getElementById('tok-toggles').innerHTML = ALL_TOKS.map(t =>
+    `<button class="tog-btn${S.activeToks.has(t)?' on':''}" onclick="toggleTok('${t}')">${t}</button>`
+  ).join('');
+}
+
+function toggleEx(ex) {
+  if (S.activeExs.has(ex)) {
+    if (S.activeExs.size <= 1) return;
+    S.activeExs.delete(ex);
+    if (S.sel?.ex === ex) { S.sel = null; document.getElementById('drawer').classList.remove('open'); }
+  } else { S.activeExs.add(ex); }
+  buildToggles(); buildTable(); updateSummary();
+}
+
+function toggleTok(tok) {
+  if (S.activeToks.has(tok)) {
+    if (S.activeToks.size <= 1) return;
+    S.activeToks.delete(tok);
+    if (S.sel?.tok === tok) { S.sel = null; document.getElementById('drawer').classList.remove('open'); }
+  } else { S.activeToks.add(tok); }
+  buildToggles(); buildTable(); updateSummary();
+}
+
+/* ═══════════════════════════════════════════════════
+   THEME
+   ═══════════════════════════════════════════════════ */
+function toggleTheme() {
+  const r = document.documentElement;
+  r.dataset.theme = r.dataset.theme === 'light' ? 'dark' : 'light';
+  if (S.sel) drawDepth(S.sel.tok, S.sel.ex);
+}
+
+/* ═══════════════════════════════════════════════════
+   HISTORY PANEL
+   ═══════════════════════════════════════════════════ */
+async function openHistory(tok, ex) {
+  // Toggle si même combinaison
+  if (S.histTok === tok && S.histEx === ex) { closeHistory(); return; }
+  S.histTok = tok;
+  S.histEx  = ex;
+  buildTable();
+
+  const panel   = document.getElementById('hist-panel');
+  const loading = document.getElementById('hist-loading');
+  const charts  = document.getElementById('hist-charts');
+  const err     = document.getElementById('hist-err');
+
+  document.getElementById('hist-tok-badge').textContent = tok;
+  document.getElementById('hist-title').textContent =
+    `${TOKEN_META[tok].name} / ${ex} — 60-Day History`;
+
+  panel.classList.add('open');
+  loading.style.display = '';
+  charts.style.display  = 'none';
+  err.style.display     = 'none';
+
+  // Charge depuis le cache ou via API
+  const cached = S.history[tok]?.[ex];
+  if (cached) {
+    renderHistory(tok, ex);
+    loading.style.display = 'none';
+    charts.style.display  = '';
+    return;
+  }
+
+  try {
+    const resp = await fetch('/api/history', { signal: AbortSignal.timeout(20000) });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const raw = await resp.json();
+    // Cache tout (un seul appel pour tous les tokens + exchanges)
+    for (const t of Object.keys(raw)) {
+      if (!S.history[t]) S.history[t] = {};
+      for (const e of Object.keys(raw[t] || {})) {
+        if (raw[t][e]) S.history[t][e] = raw[t][e];
+      }
+    }
+    if (!S.history[tok]?.[ex]) throw new Error('no data');
+    renderHistory(tok, ex);
+    loading.style.display = 'none';
+    charts.style.display  = '';
+  } catch(e) {
+    loading.style.display = 'none';
+    err.style.display     = '';
+  }
+}
+
+function closeHistory() {
+  S.histTok = null;
+  S.histEx  = null;
+  document.getElementById('hist-panel').classList.remove('open');
+  buildTable();
+}
+
+function renderHistory(tok, ex) {
+  const raw = S.history[tok]?.[ex];
+  if (!raw || raw.length === 0) return;
+  // Toujours trier du plus ancien au plus récent
+  const data = [...raw].sort((a, b) => a.ts - b.ts);
+
+  drawLineChart('hist-price-svg', 'hist-price-labels',
+    data.map(d => d.close), data, '#4A9EFF', fP, 'close', 'Prix');
+  drawBarChart('hist-vol-svg', 'hist-vol-labels',
+    data.map(d => d.vol), data, fV);
+  drawLineChart('hist-sp-svg', 'hist-sp-labels',
+    data.map(d => d.spread), data, '#F5A020', v => v.toFixed(2) + '%', 'spread', 'Range H-L');
+}
+
+const dateF = ts => new Date(ts).toLocaleDateString('fr-FR', { day:'2-digit', month:'short' });
+
+function attachTooltip(svgEl, vals, data, fmtFn, field, label) {
+  const tt = document.getElementById('hist-tooltip');
+  const W = 500, PAD = 8;
+  const n = vals.length;
+
+  svgEl.addEventListener('mousemove', e => {
+    const rect = svgEl.getBoundingClientRect();
+    const relX = (e.clientX - rect.left) / rect.width * W;
+    const i = Math.max(0, Math.min(n - 1, Math.round((relX - PAD) / ((W - PAD*2) / (n-1)))));
+    const row = data[i];
+    if (!row) return;
+    tt.querySelector('.tt-date').textContent = dateF(row.ts);
+    tt.querySelector('.tt-val').textContent  = `${label}: ${fmtFn(vals[i])}`;
+    tt.style.display = '';
+    tt.style.left = (e.clientX + 12) + 'px';
+    tt.style.top  = (e.clientY - 10) + 'px';
+  });
+  svgEl.addEventListener('mouseleave', () => { tt.style.display = 'none'; });
+  svgEl.addEventListener('mousemove', e => {
+    // Ajuste si tooltip dépasse la fenêtre
+    const ttRect = tt.getBoundingClientRect();
+    if (e.clientX + 12 + ttRect.width > window.innerWidth)
+      tt.style.left = (e.clientX - ttRect.width - 12) + 'px';
+  });
+}
+
+function drawLineChart(svgId, lblId, vals, data, color, fmtFn, field, label) {
+  const svg = document.getElementById(svgId);
+  const W = 500, H = 120, PAD = 8;
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = max - min || 1;
+  const n = vals.length;
+
+  const xs = vals.map((_, i) => PAD + (i / (n - 1)) * (W - PAD * 2));
+  const ys = vals.map(v => H - PAD - ((v - min) / range) * (H - PAD * 2));
+
+  const areaPath = `M${xs[0]},${H - PAD} ` +
+    xs.map((x, i) => `L${x},${ys[i]}`).join(' ') +
+    ` L${xs[n-1]},${H - PAD} Z`;
+  const linePath = `M${xs[0]},${ys[0]} ` +
+    xs.slice(1).map((x, i) => `L${x},${ys[i+1]}`).join(' ');
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="lg-${svgId}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity=".25"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path d="${areaPath}" fill="url(#lg-${svgId})"/>
+    <path d="${linePath}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round"/>
+    <circle cx="${xs[n-1]}" cy="${ys[n-1]}" r="2.5" fill="${color}"/>
+    <rect x="0" y="0" width="${W}" height="${H}" fill="transparent"/>
+  `;
+
+  const lbl = document.getElementById(lblId);
+  const first = data[0], last = data[data.length - 1];
+  lbl.innerHTML = `
+    <span class="hist-lbl">${dateF(first.ts)}</span>
+    <span class="hist-lbl" style="color:var(--t2)">${fmtFn(vals[n-1])}</span>
+    <span class="hist-lbl">${dateF(last.ts)}</span>
+  `;
+
+  attachTooltip(svg, vals, data, fmtFn, field, label);
+}
+
+function drawBarChart(svgId, lblId, vals, data, fmtFn) {
+  const svg = document.getElementById(svgId);
+  const W = 500, H = 120, PAD = 8;
+  const max = Math.max(...vals) || 1;
+  const n = vals.length;
+  const bw = Math.max(1, (W - PAD * 2) / n - 1);
+  const color = '#1BB870';
+
+  const bars = vals.map((v, i) => {
+    const x  = PAD + i * ((W - PAD * 2) / n);
+    const bh = (v / max) * (H - PAD * 2);
+    const y  = H - PAD - bh;
+    return `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" fill="${color}" opacity=".7" rx="1"/>`;
+  }).join('');
+
+  const ma7  = vals.map((_, i) => {
+    const sl = vals.slice(Math.max(0, i - 6), i + 1);
+    return sl.reduce((a, b) => a + b, 0) / sl.length;
+  });
+  const maXs = ma7.map((_, i) => PAD + i * ((W - PAD * 2) / n) + bw / 2);
+  const maYs = ma7.map(v => H - PAD - (v / max) * (H - PAD * 2));
+  const maPath = `M${maXs[0]},${maYs[0]} ` +
+    maXs.slice(1).map((x, i) => `L${x},${maYs[i+1]}`).join(' ');
+
+  svg.innerHTML = `
+    ${bars}
+    <path d="${maPath}" fill="none" stroke="#4A9EFF" stroke-width="1.2" stroke-dasharray="3 2" opacity=".8"/>
+    <rect x="0" y="0" width="${W}" height="${H}" fill="transparent"/>
+  `;
+
+  const lbl = document.getElementById(lblId);
+  const first = data[0], last = data[data.length - 1];
+  const total = vals.reduce((a, b) => a + b, 0);
+  lbl.innerHTML = `
+    <span class="hist-lbl">${dateF(first.ts)}</span>
+    <span class="hist-lbl" style="color:var(--t2)">Total 60j: ${fmtFn(total)}</span>
+    <span class="hist-lbl">${dateF(last.ts)}</span>
+  `;
+
+  attachTooltip(svg, vals, data, fmtFn, 'vol', 'Volume');
+}
+
+/* ═══════════════════════════════════════════════════
+   EXCHANGE REQUIREMENTS
+   ═══════════════════════════════════════════════════ */
+const REQS = {
+
+  'Bybit': [
+    {
+      id: 'spread1',
+      short: 'Spread ≥ 1%',
+      label: 'Bid/ask spread ≥ 1%  (required: < 1%)',
+      check: (d) => d.spread < 1,
+    },
+    {
+      id: 'vol20k',
+      short: 'Vol < 20K$',
+      label: '24h taker volume < 20,000 USDT  (required: > 20K)',
+      check: (d) => (d.bVol + d.sVol) >= 20_000,
+    },
+    {
+      id: 'liq1500',
+      short: 'Liq ±2% < 1.5K$',
+      label: 'Liquidity within ±2% < 1,500 USDT  (required: > 1.5K)',
+      check: (d) => {
+        if (!d.bids?.length) return true; // pas d'order book réel
+        const v = d.bids
+          .filter(([p]) => p >= d.price * 0.98)
+          .reduce((s, [p, q]) => s + p * q, 0);
+        return v >= 1_500;
+      },
+    },
+  ],
+
+  'Bitget': [
+    {
+      id: 'spread05',
+      short: 'Spread ≥ 0.5%',
+      label: 'Average spread ≥ 0.5%  (required: < 0.5%)',
+      check: (d) => d.spread < 0.5,
+    },
+    {
+      id: 'depth_ask5k',
+      short: 'Depth +2% < 5K$',
+      label: 'Ask-side depth within +2% < 5,000 USDT  (required: > 5K)',
+      check: (d) => {
+        if (!d.asks?.length) return true;
+        const v = d.asks
+          .filter(([p]) => p <= d.price * 1.02)
+          .reduce((s, [p, q]) => s + p * q, 0);
+        return v >= 5_000;
+      },
+    },
+    {
+      id: 'depth_bid5k',
+      short: 'Depth -2% < 5K$',
+      label: 'Bid-side depth within -2% < 5,000 USDT  (required: > 5K)',
+      check: (d) => {
+        if (!d.bids?.length) return true;
+        const v = d.bids
+          .filter(([p]) => p >= d.price * 0.98)
+          .reduce((s, [p, q]) => s + p * q, 0);
+        return v >= 5_000;
+      },
+    },
+    {
+      id: 'drop30d',
+      short: 'Day drop > 30%',
+      label: 'Daily drop > 30%  (required: < 30%/day)',
+      check: (d, tok) => {
+        const hist = S.history[tok]?.['Bitget'];
+        if (!hist?.length) return true;
+        const sorted = [...hist].sort((a, b) => a.ts - b.ts);
+        if (sorted.length < 2) return true;
+        const last = sorted[sorted.length - 1];
+        const prev = sorted[sorted.length - 2];
+        if (!prev.close || prev.close <= 0) return true;
+        return (last.close - prev.close) / prev.close > -0.30;
+      },
+    },
+    {
+      id: 'drop3d50',
+      short: '3d drop > 50%',
+      label: 'Cumulative 3-day drop > 50%  (required: < 50%/3d)',
+      check: (d, tok) => {
+        const hist = S.history[tok]?.['Bitget'];
+        if (!hist?.length) return true;
+        const sorted = [...hist].sort((a, b) => a.ts - b.ts);
+        if (sorted.length < 4) return true;
+        const now = sorted[sorted.length - 1];
+        const ref = sorted[sorted.length - 4];
+        if (!ref.close || ref.close <= 0) return true;
+        return (now.close - ref.close) / ref.close > -0.50;
+      },
+    },
+    {
+      id: 'pricediff5',
+      short: 'Price gap > 5%',
+      label: 'Price deviation vs other exchanges > 5%  (required: < 5%)',
+      check: (d, tok) => {
+        if (!d.price) return true;
+        const others = ALL_EXS
+          .filter(e => e !== 'Bitget')
+          .map(e => S.data[tok]?.[e]?.price)
+          .filter(p => p > 0);
+        if (others.length === 0) return true;
+        const avg = others.reduce((a, b) => a + b, 0) / others.length;
+        return Math.abs(d.price - avg) / avg < 0.05;
+      },
+    },
+  ],
+
+  'Gate.io': [
+    {
+      id: 'vol20k',
+      short: 'Vol < 20K$',
+      label: 'Daily volume < 20,000 USDT  (required: > 20K)',
+      check: (d) => (d.bVol + d.sVol) >= 20_000,
+    },
+    {
+      id: 'spread2',
+      short: 'Spread ≥ 2%',
+      label: 'Spread ≥ 2%  (required: < 2%)',
+      check: (d) => d.spread < 2,
+    },
+    {
+      id: 'depth_buy500',
+      short: 'Depth buy < 500$',
+      label: 'Bid depth within ±2% < 500 USDT  (required: > 500)',
+      check: (d) => {
+        if (!d.bids?.length) return true;
+        const v = d.bids
+          .filter(([p]) => p >= d.price * 0.98)
+          .reduce((s, [p, q]) => s + p * q, 0);
+        return v >= 500;
+      },
+    },
+    {
+      id: 'depth_sell500',
+      short: 'Depth sell < 500$',
+      label: 'Ask depth within ±2% < 500 USDT  (required: > 500)',
+      check: (d) => {
+        if (!d.asks?.length) return true;
+        const v = d.asks
+          .filter(([p]) => p <= d.price * 1.02)
+          .reduce((s, [p, q]) => s + p * q, 0);
+        return v >= 500;
+      },
+    },
+  ],
+};
+
+/**
+ * Retourne la liste des requirements non respectés pour un token/exchange.
+ * Renvoie [] si : pas de données réelles, exchange sans requirements, paire non listée.
+ */
+function checkReqs(tok, ex) {
+  if (!S.apiOk) return [];           // simulated data → pas d'alerte
+  const rules = REQS[ex];
+  if (!rules) return [];             // Binance / OKX → pas de requirements définis
+  const d = S.data[tok]?.[ex];
+  if (!d) return [];                 // paire non listée
+  return rules.filter(r => !r.check(d, tok, ex));
+}
+
+/* ═══════════════════════════════════════════════════
+   TOKEN OVERVIEW  (sparklines tous tokens)
+   ═══════════════════════════════════════════════════ */
+const HIST_PREF = ['Binance', 'Gate.io', 'OKX', 'Bitget', 'Bybit'];
+
+function bestHistSource(tok) {
+  for (const ex of HIST_PREF) {
+    if (S.history[tok]?.[ex]?.length > 2) return ex;
+  }
+  return null;
+}
+
+function bestLivePrice(tok) {
+  for (const ex of HIST_PREF) {
+    const d = S.data[tok]?.[ex];
+    if (d?.price > 0) return d.price;
+  }
+  return null;
+}
+
+function miniLineSvg(vals, color, H=20) {
+  if (!vals || vals.length < 2) return `<svg viewBox="0 0 128 ${H}"></svg>`;
+  const W = 128, PAD = 1;
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = max - min || Math.abs(min) * 0.01 || 1;
+  const n = vals.length;
+  const xs = vals.map((_, i) => PAD + (i / (n - 1)) * (W - PAD * 2));
+  const ys = vals.map(v => H - PAD - ((v - min) / range) * (H - PAD * 2));
+  const area = `M${xs[0]},${H} ` + xs.map((x,i) => `L${x},${ys[i]}`).join(' ') + ` L${xs[n-1]},${H} Z`;
+  const line = `M${xs[0]},${ys[0]} ` + xs.slice(1).map((x,i) => `L${x},${ys[i+1]}`).join(' ');
+  const gId = 'ovg' + color.replace('#','') + H;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <defs><linearGradient id="${gId}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity=".3"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#${gId})"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="1.3" stroke-linejoin="round"/>
+    <circle cx="${xs[n-1]}" cy="${ys[n-1]}" r="1.8" fill="${color}"/>
+  </svg>`;
+}
+
+function miniBarSvg(vals, H=20) {
+  if (!vals || vals.length < 2) return `<svg viewBox="0 0 128 ${H}"></svg>`;
+  const W = 128, PAD = 1;
+  const max = Math.max(...vals) || 1;
+  const n = vals.length;
+  const bw = Math.max(1, (W - PAD * 2) / n - 0.6);
+  const bars = vals.map((v, i) => {
+    const x  = PAD + i * ((W - PAD * 2) / n);
+    const bh = Math.max(1, (v / max) * (H - PAD * 2));
+    const y  = H - PAD - bh;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="#1BB870" opacity=".6" rx="0.5"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${bars}</svg>`;
+}
+
+function buildOverview() {
+  const strip = document.getElementById('ov-strip');
+  strip.innerHTML = ALL_TOKS.map(tok => {
+    const tm  = TOKEN_META[tok];
+    const src = bestHistSource(tok);
+    const price = bestLivePrice(tok);
+    const priceStr = price ? fP(price) : '—';
+
+    if (!src) {
+      return `<div class="ov-card" style="border-left-color:${tm.club}">
+        <div class="ov-head">
+          <span class="ov-sym">${tok}</span>
+          <span class="ov-price" style="color:var(--t3)">${priceStr}</span>
+        </div>
+        <div class="ov-no-data">No data available</div>
+      </div>`;
+    }
+
+    const raw    = S.history[tok][src];
+    const data   = [...raw].sort((a, b) => a.ts - b.ts);
+    const closes = data.map(d => d.close);
+    const vols   = data.map(d => d.vol);
+    const liqs   = data.map(d => d.spread);
+    const pct    = closes.length > 1 ? (closes[closes.length-1] - closes[0]) / (closes[0] || 1) * 100 : 0;
+    const pctStr = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+    const pctCol = pct >= 0 ? '#1BB870' : '#FF0051';
+
+    return `<div class="ov-card" style="border-left-color:${tm.club}">
+      <div class="ov-head">
+        <span class="ov-sym">${tok}</span>
+        <span class="ov-price">${priceStr}</span>
+        <span class="ov-pct" style="color:${pctCol}">${pctStr}</span>
+      </div>
+      <div class="ov-sparks">
+        <div class="ov-spark-row">
+          <span class="ov-spark-lbl">Price</span>
+          <div class="ov-spark-wrap">${miniLineSvg(closes, '#4A9EFF')}</div>
+        </div>
+        <div class="ov-spark-row">
+          <span class="ov-spark-lbl">Vol</span>
+          <div class="ov-spark-wrap">${miniBarSvg(vols)}</div>
+        </div>
+        <div class="ov-spark-row">
+          <span class="ov-spark-lbl">Liq</span>
+          <div class="ov-spark-wrap">${miniLineSvg(liqs, '#F5A020')}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function loadOverview() {
+  // Si déjà chargé dans S.history (ex: depuis openHistory), réutilise
+  const hasData = ALL_TOKS.some(t =>
+    HIST_PREF.some(e => S.history[t]?.[e]?.length > 0)
+  );
+  if (hasData) { buildOverview(); return; }
+
+  try {
+    const resp = await fetch('/api/history', { signal: AbortSignal.timeout(25000) });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const raw = await resp.json();
+    for (const t of Object.keys(raw)) {
+      if (!S.history[t]) S.history[t] = {};
+      for (const e of Object.keys(raw[t] || {})) {
+        if (raw[t][e]) S.history[t][e] = raw[t][e];
+      }
+    }
+    buildOverview();
+  } catch(e) {
+    const strip = document.getElementById('ov-strip');
+    strip.innerHTML = `<div class="ov-loading-msg">⚠ Historical data unavailable — API unreachable</div>`;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   REFRESH
+   ═══════════════════════════════════════════════════ */
+async function refresh() {
+  await fetchData();
+  buildTable();
+  updateSummary();
+  if (S.sel) openDrawer();
+  // Met à jour les prix dans l'aperçu si les données historiques sont chargées
+  const hasData = ALL_TOKS.some(t => HIST_PREF.some(e => S.history[t]?.[e]?.length > 0));
+  if (hasData) buildOverview();
+  S.countdown = 30;
+}
+
+function manualRefresh() { refresh(); }
+
+/* ═══════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════ */
+async function init() {
+  // Affiche des simulated data immédiatement (pas d'attente réseau)
+  setStatus('loading');
+  genDataSim();
+  buildToggles();
+  buildTable();
+  updateSummary();
+
+  // Essaie de se connecter au proxy local
+  await fetchData();
+  buildTable();
+  updateSummary();
+
+  // Charge l'aperçu historique (sparklines) en arrière-plan
+  loadOverview();
+
+  // Refresh toutes les 30s
+  setInterval(refresh, 30_000);
+
+  // Countdown
+  setInterval(() => {
+    S.countdown = Math.max(0, S.countdown - 1);
+    document.getElementById('cd').textContent = `Refresh ${S.countdown}s`;
+    if (S.countdown === 0) S.countdown = 30;
+  }, 1_000);
+}
+
+window.addEventListener('resize', () => {
+  if (S.sel) setTimeout(() => drawDepth(S.sel.tok, S.sel.ex), 50);
+});
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
