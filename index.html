@@ -1186,22 +1186,175 @@ function genDataSim() {
   }
 }
 
-/* ── Fetch données réelles depuis le proxy ── */
+/* ── Exchange symbols ── */
+const MARKET_SYMS = {
+  Binance: { ACM:'ACMUSDT', ASR:'ASRUSDT', ATM:'ATMUSDT', BAR:'BARUSDT', CITY:'CITYUSDT', JUV:'JUVUSDT', OG:'OGUSDT', PSG:'PSGUSDT' },
+  Bybit:   { CITY:'CITYUSDT', JUV:'JUVUSDT', PSG:'PSGUSDT' },
+  Bitget:  { ACM:'ACMUSDT', ASR:'ASRUSDT', ATM:'ATMUSDT', JUV:'JUVUSDT', PSG:'PSGUSDT' },
+  OKX:     { ARG:'ARG-USDT', CITY:'CITY-USDT', GAL:'GAL-USDT', MENGO:'MENGO-USDT', POR:'POR-USDT', SPURS:'SPURS-USDT', TRA:'TRA-USDT' },
+  'Gate.io': { ACM:'ACM_USDT', AFC:'AFC_USDT', ALA:'ALA_USDT', AM:'AM_USDT', ARG:'ARG_USDT', ASR:'ASR_USDT', ATM:'ATM_USDT', CITY:'CITY_USDT', GAL:'GAL_USDT', INTER:'INTER_USDT', ITA:'ITA_USDT', JUV:'JUV_USDT', MENGO:'MENGO_USDT', NAP:'NAP_USDT', OG:'OG_USDT', POR:'POR_USDT', PSG:'PSG_USDT', SPURS:'SPURS_USDT' },
+};
+
+function sfv(v, d=0.0) { const n=parseFloat(v); return (isNaN(n)||v===null||v===''||v==='null')?d:n; }
+
+function buyRatioJS(bids, asks, n=10) {
+  const bq=bids.slice(0,n).reduce((s,b)=>s+sfv(b[1]),0);
+  const aq=asks.slice(0,n).reduce((s,a)=>s+sfv(a[1]),0);
+  const t=bq+aq; return t>0?bq/t:0.5;
+}
+
+function makeResultJS(price, bid, ask, qvol, bids, asks) {
+  bid=sfv(bid); ask=sfv(ask);
+  const spread=bid>0?(ask-bid)/bid*100:0, ratio=buyRatioJS(bids,asks);
+  return { price:sfv(price), bid, ask, spread:Math.round(spread*1e6)/1e6,
+    buyVol:sfv(qvol)*ratio, sellVol:sfv(qvol)*(1-ratio),
+    bids:bids.slice(0,50).map(b=>[sfv(b[0]),sfv(b[1])]),
+    asks:asks.slice(0,50).map(a=>[sfv(a[0]),sfv(a[1])]) };
+}
+
+async function jFetch(url, timeout=8000) {
+  const resp=await fetch(url,{signal:AbortSignal.timeout(timeout)});
+  if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
+
+async function fetchBinanceEx(tok) {
+  const sym=MARKET_SYMS.Binance[tok]; if(!sym) return null;
+  try {
+    const [tick,depth]=await Promise.all([
+      jFetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}`),
+      jFetch(`https://api.binance.com/api/v3/depth?symbol=${sym}&limit=50`)]);
+    if(tick.code) return null;
+    return makeResultJS(tick.lastPrice,tick.bidPrice,tick.askPrice,tick.quoteVolume,depth.bids||[],depth.asks||[]);
+  } catch{return null;}
+}
+
+async function fetchBybitEx(tok) {
+  const sym=MARKET_SYMS.Bybit[tok]; if(!sym) return null;
+  try {
+    const [tick,depth]=await Promise.all([
+      jFetch(`https://api.bybit.com/v5/market/tickers?category=spot&symbol=${sym}`),
+      jFetch(`https://api.bybit.com/v5/market/orderbook?category=spot&symbol=${sym}&limit=50`)]);
+    const lst=tick?.result?.list||[]; if(!lst.length) return null;
+    const t=lst[0],res=depth?.result||{};
+    return makeResultJS(t.lastPrice,t.bid1Price,t.ask1Price,t.turnover24h,res.b||[],res.a||[]);
+  } catch{return null;}
+}
+
+async function fetchOKXEx(tok) {
+  const sym=MARKET_SYMS.OKX[tok]; if(!sym) return null;
+  try {
+    const [tick,depth]=await Promise.all([
+      jFetch(`https://www.okx.com/api/v5/market/ticker?instId=${sym}`),
+      jFetch(`https://www.okx.com/api/v5/market/books?instId=${sym}&sz=50`)]);
+    const data=tick?.data||[]; if(!data.length) return null;
+    const t=data[0],dd=(depth?.data||[{}])[0];
+    return makeResultJS(t.last,t.bidPx,t.askPx,t.volCcy24h,dd.bids||[],dd.asks||[]);
+  } catch{return null;}
+}
+
+async function fetchBitgetEx(tok) {
+  const sym=MARKET_SYMS.Bitget[tok]; if(!sym) return null;
+  try {
+    const [tick,depth]=await Promise.all([
+      jFetch(`https://api.bitget.com/api/v2/spot/market/tickers?symbol=${sym}`),
+      jFetch(`https://api.bitget.com/api/v2/spot/market/orderbook?symbol=${sym}&limit=50`)]);
+    const data=tick?.data||[]; if(!data.length) return null;
+    const t=data[0],dd=depth?.data||{};
+    return makeResultJS(t.lastPr,t.bidPr,t.askPr,t.quoteVolume,dd.bids||[],dd.asks||[]);
+  } catch{return null;}
+}
+
+async function fetchGateEx(tok) {
+  const sym=MARKET_SYMS['Gate.io'][tok]; if(!sym) return null;
+  try {
+    const [tick,depth]=await Promise.all([
+      jFetch(`https://api.gateio.ws/api/v4/spot/tickers?currency_pair=${sym}`),
+      jFetch(`https://api.gateio.ws/api/v4/spot/order_book?currency_pair=${sym}&limit=50`)]);
+    if(!tick?.length) return null;
+    const t=tick[0];
+    return makeResultJS(t.last,t.highest_bid,t.lowest_ask,t.quote_volume,depth.bids||[],depth.asks||[]);
+  } catch{return null;}
+}
+
+async function fetchAllMarket() {
+  const result={}, promises=[];
+  for(const tok of ALL_TOKS) {
+    result[tok]={};
+    for(const [ex,fn] of [['Binance',fetchBinanceEx],['Bybit',fetchBybitEx],['OKX',fetchOKXEx],['Bitget',fetchBitgetEx],['Gate.io',fetchGateEx]])
+      promises.push(fn(tok).then(d=>{result[tok][ex]=d;}));
+  }
+  await Promise.allSettled(promises);
+  return result;
+}
+
+function klineNormJS(close,high,low,vol,buyvol,trades,ts) {
+  close=sfv(close);high=sfv(high);low=sfv(low);vol=sfv(vol);buyvol=sfv(buyvol);
+  const sp=close>0?(high-low)/close*100:0;
+  return{ts:parseInt(ts),close,high,low,vol,buyVol:buyvol,sellVol:Math.max(0,vol-buyvol),trades:parseInt(trades)||0,spread:Math.round(sp*1e4)/1e4};
+}
+
+async function histBinanceEx(tok) {
+  const sym=MARKET_SYMS.Binance[tok]; if(!sym) return null;
+  try{const r=await jFetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1d&limit=60`,12000);
+    if(!Array.isArray(r)) return null;
+    return r.map(k=>klineNormJS(k[4],k[2],k[3],k[7],k[9],k[8],k[0]));}catch{return null;}
+}
+
+async function histBybitEx(tok) {
+  const sym=MARKET_SYMS.Bybit[tok]; if(!sym) return null;
+  try{const r=await jFetch(`https://api.bybit.com/v5/market/kline?category=spot&symbol=${sym}&interval=D&limit=60`,12000);
+    const lst=r?.result?.list||[]; if(!lst.length) return null;
+    return[...lst].reverse().map(k=>klineNormJS(k[4],k[2],k[3],k[6],0,0,k[0]));}catch{return null;}
+}
+
+async function histOKXEx(tok) {
+  const sym=MARKET_SYMS.OKX[tok]; if(!sym) return null;
+  try{const r=await jFetch(`https://www.okx.com/api/v5/market/candles?instId=${sym}&bar=1D&limit=60`,12000);
+    const data=r?.data||[]; if(!data.length) return null;
+    return[...data].reverse().map(k=>klineNormJS(k[4],k[2],k[3],k[7],0,0,k[0]));}catch{return null;}
+}
+
+async function histBitgetEx(tok) {
+  const sym=MARKET_SYMS.Bitget[tok]; if(!sym) return null;
+  try{const r=await jFetch(`https://api.bitget.com/api/v2/spot/market/candles?symbol=${sym}&granularity=1day&limit=60`,12000);
+    const data=r?.data||[]; if(!data.length) return null;
+    return[...data].reverse().map(k=>klineNormJS(k[4],k[2],k[3],k[6],0,0,k[0]));}catch{return null;}
+}
+
+async function histGateEx(tok) {
+  const sym=MARKET_SYMS['Gate.io'][tok]; if(!sym) return null;
+  try{const r=await jFetch(`https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=${sym}&interval=1d&limit=60`,12000);
+    if(!Array.isArray(r)||!r.length) return null;
+    return r.map(k=>klineNormJS(k[2],k[3],k[4],k[1],0,0,parseInt(k[0])*1000));}catch{return null;}
+}
+
+async function fetchAllHistory() {
+  const result={}, promises=[];
+  for(const tok of ALL_TOKS) {
+    result[tok]={};
+    for(const [ex,fn] of [['Binance',histBinanceEx],['Bybit',histBybitEx],['OKX',histOKXEx],['Bitget',histBitgetEx],['Gate.io',histGateEx]])
+      promises.push(fn(tok).then(d=>{result[tok][ex]=d;}));
+  }
+  await Promise.allSettled(promises);
+  return result;
+}
+
+/* ── Fetch live data directly from exchanges ── */
 async function fetchData() {
   try {
-    const resp = await fetch('/api/market', { signal: AbortSignal.timeout(25000) });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const raw = await resp.json();
-
+    const raw = await fetchAllMarket();
+    let anyData = false;
     for (const tok of ALL_TOKS) {
       if (!S.data[tok]) S.data[tok] = {};
       for (const ex of ALL_EXS) {
         const d    = raw[tok]?.[ex];
         const prev = S.data[tok][ex];
         if (!d || !d.price || d.price <= 0) {
-          S.data[tok][ex] = null; // paire non listée sur cet exchange
+          S.data[tok][ex] = null;
           continue;
         }
+        anyData = true;
         const prevP = prev?.price ?? d.price;
         const topBV = (d.bids || []).slice(0,10).reduce((s,[p,q])=>s+p*q, 0);
         const topAV = (d.asks || []).slice(0,10).reduce((s,[p,q])=>s+p*q, 0);
@@ -1219,6 +1372,7 @@ async function fetchData() {
         };
       }
     }
+    if (!anyData) throw new Error('no data');
     S.apiOk = true;
     setStatus('live');
     return true;
@@ -1660,10 +1814,7 @@ async function openHistory(tok, ex) {
   }
 
   try {
-    const resp = await fetch('/api/history', { signal: AbortSignal.timeout(20000) });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const raw = await resp.json();
-    // Cache tout (un seul appel pour tous les tokens + exchanges)
+    const raw = await fetchAllHistory();
     for (const t of Object.keys(raw)) {
       if (!S.history[t]) S.history[t] = {};
       for (const e of Object.keys(raw[t] || {})) {
@@ -2090,9 +2241,7 @@ async function loadOverview() {
   if (hasData) { buildOverview(); return; }
 
   try {
-    const resp = await fetch('/api/history', { signal: AbortSignal.timeout(25000) });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const raw = await resp.json();
+    const raw = await fetchAllHistory();
     for (const t of Object.keys(raw)) {
       if (!S.history[t]) S.history[t] = {};
       for (const e of Object.keys(raw[t] || {})) {
