@@ -9,5 +9,9 @@
     { "src": "/api/history", "dest": "/api/history.py" },
     { "src": "/api/health",  "dest": "/api/health.py"  },
     { "src": "/(.*)",        "dest": "/index.html"     }
-  ]
+  ],
+  "functions": {
+    "api/market.py":  { "maxDuration": 10 },
+    "api/history.py": { "maxDuration": 10 }
+  }
 }

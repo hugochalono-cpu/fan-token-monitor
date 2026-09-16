@@ -1,7 +1,7 @@
 from http.server import BaseHTTPRequestHandler
 import json, requests, concurrent.futures
 
-TIMEOUT = 5
+TIMEOUT = 3
 
 TOKENS = [
     'ACM', 'AFC', 'ALA', 'AM', 'ARG', 'ASR', 'ATM', 'BAR',
@@ -145,7 +145,7 @@ def fetch_all():
         }
         for (tok, ex), fut in futures.items():
             try:
-                result[tok][ex] = fut.result(timeout=8)
+                result[tok][ex] = fut.result(timeout=6)
             except:
                 result[tok][ex] = None
     return result

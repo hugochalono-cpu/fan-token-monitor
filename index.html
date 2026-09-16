@@ -1189,7 +1189,7 @@ function genDataSim() {
 /* ── Fetch données réelles depuis le proxy ── */
 async function fetchData() {
   try {
-    const resp = await fetch('/api/market', { signal: AbortSignal.timeout(12000) });
+    const resp = await fetch('/api/market', { signal: AbortSignal.timeout(25000) });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const raw = await resp.json();
 
