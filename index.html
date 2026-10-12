@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fan Token Monitor</title>
+<style>
+/* ── Design tokens ── */
+:root {
+  --bg:      #000000;
+  --surface: #0A0A0A;
+  --card:    #111111;
+  --card-h:  #1A1A1A;
+  --border:  #2A2A2A;
+  --border-s:#3A3A3A;
+  --t1: #FFFFFF;
+  --t2: #AAAAAA;
+  --t3: #555555;
+  --green:  #22C55E;
+  --red:    #EF4444;
+  --yellow: #EAB308;
+  --blue:   #3B82F6;
+  --accent: #6366F1;
+  --r4: 4px; --r7: 7px; --r10: 10px;
+}
+
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--t1); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:13px; min-height:100vh; }
+
+/* ── Tab nav ── */
+.page-nav { display:flex; gap:2px; background:var(--surface); border-bottom:1px solid var(--border); padding:0 20px; }
+.page-tab { padding:12px 20px; cursor:pointer; border-bottom:2px solid transparent; color:var(--t2); font-size:13px; font-weight:500; transition:all .15s; user-select:none; }
+.page-tab:hover { color:var(--t1); }
+.page-tab.active { color:var(--t1); border-bottom-color:var(--accent); }
+
+/* ── Pages ── */
+.page { display:none; }
+.page.active { display:block; }
+
+/* ═══════════════════════════════════════════
+   PAGE 1 — Market Monitor
+═══════════════════════════════════════════ */
+#page1 header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--border); background:var(--surface); }
+#page1 header h1 { font-size:16px; font-weight:700; letter-spacing:.3px; }
+.header-right { display:flex; align-items:center; gap:10px; }
+.last-update { font-size:11px; color:var(--t3); }
+.btn { padding:6px 14px; border-radius:var(--r7); border:1px solid var(--border-s); background:var(--card); color:var(--t1); font-size:12px; cursor:pointer; transition:background .15s; }
+.btn:hover { background:var(--card-h); }
+.btn-primary { background:var(--accent); border-color:var(--accent); }
+.btn-primary:hover { background:#5254cc; }
+
+/* Token filter row */
+.filter-bar { display:flex; flex-wrap:wrap; gap:6px; padding:10px 20px; border-bottom:1px solid var(--border); background:var(--surface); }
+.tok-chip { padding:3px 10px; border-radius:20px; border:1px solid var(--border); background:var(--card); color:var(--t2); font-size:11px; cursor:pointer; transition:all .15s; }
+.tok-chip:hover { border-color:var(--border-s); color:var(--t1); }
+.tok-chip.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+/* Exchange grid */
+.ex-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:14px; padding:16px 20px; }
+
+/* Exchange card */
+.ex-card { background:var(--card); border:1px solid var(--border); border-radius:var(--r10); overflow:hidden; }
+.ex-head { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--card-h); border-bottom:1px solid var(--border); }
+.ex-name { font-size:13px; font-weight:700; }
+.ex-meta { display:flex; align-items:center; gap:8px; }
+.th-note { font-size:11px; color:var(--t3); }
+.th-wrap { position:relative; }
+.req-header-tag { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:12px; background:#1F1A3A; border:1px solid #3A3060; color:#A78BFA; font-size:11px; cursor:pointer; user-select:none; transition:background .15s; }
+.req-header-tag:hover { background:#2A2450; }
+
+/* Criteria popup */
+.crit-popup { display:none; position:absolute; top:calc(100% + 6px); right:0; z-index:200; background:#1A1A1A; border:1px solid #3A3A3A; border-radius:var(--r7); padding:12px 14px; min-width:260px; max-width:320px; box-shadow:0 8px 32px rgba(0,0,0,.7); }
+.crit-popup.open { display:block; }
+.crit-popup-title { font-size:11px; font-weight:700; color:var(--t2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+.crit-item { display:flex; justify-content:space-between; align-items:flex-start; padding:5px 0; border-bottom:1px solid #2A2A2A; gap:10px; }
+.crit-item:last-child { border-bottom:none; }
+.crit-label { color:var(--t2); font-size:12px; }
+.crit-value { color:var(--t1); font-size:12px; font-weight:600; text-align:right; white-space:nowrap; }
+
+/* Exchange table */
+.ex-table { width:100%; border-collapse:collapse; }
+.ex-table th { padding:7px 10px; text-align:right; font-size:11px; color:var(--t3); font-weight:600; text-transform:uppercase; letter-spacing:.4px; border-bottom:1px solid var(--border); }
+.ex-table th:first-child { text-align:left; }
+.ex-table td { padding:8px 10px; text-align:right; border-bottom:1px solid var(--border); font-size:12px; color:var(--t2); }
+.ex-table td:first-child { text-align:left; }
+.ex-table tr:last-child td { border-bottom:none; }
+.ex-table tr.flag-row td { background:rgba(239,68,68,.08); }
+.ex-table tr.warn-row td { background:rgba(234,179,8,.06); }
+
+.tok-sym { font-weight:700; color:var(--t1); font-size:12px; }
+.tok-name { font-size:10px; color:var(--t3); }
+.price-val { color:var(--t1); font-weight:600; }
+.spread-val { }
+.spread-hi { color:var(--red); font-weight:700; }
+.spread-ok { color:var(--green); }
+.vol-val { }
+.depth-val { }
+.flag-chip { display:inline-block; padding:1px 6px; border-radius:4px; font-size:10px; font-weight:700; background:rgba(239,68,68,.2); color:var(--red); margin-left:4px; }
+
+/* Status row */
+.ex-status { padding:8px 14px; font-size:11px; color:var(--t3); display:flex; gap:14px; flex-wrap:wrap; border-top:1px solid var(--border); }
+.ex-status span { display:flex; align-items:center; gap:4px; }
+.dot { width:7px; height:7px; border-radius:50%; }
+.dot-green { background:var(--green); }
+.dot-red { background:var(--red); }
+.dot-yellow { background:var(--yellow); }
+
+/* Loader skeleton */
+.skel { background:linear-gradient(90deg,#1A1A1A 25%,#222 50%,#1A1A1A 75%); background-size:200% 100%; animation:skel 1.5s infinite; border-radius:4px; height:14px; }
+@keyframes skel { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ═══════════════════════════════════════════
+   PAGE 2 — Listings & Delistings
+═══════════════════════════════════════════ */
+#page2 { padding:0; }
+.p2-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--border); background:var(--surface); flex-wrap:wrap; gap:10px; }
+.p2-header h1 { font-size:16px; font-weight:700; }
+.p2-header-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.p2-scan-info { font-size:11px; color:var(--t3); }
+
+/* Progress */
+.p2-progress-wrap { padding:0 20px; background:var(--surface); border-bottom:1px solid var(--border); }
+.p2-progress-wrap.hidden { display:none; }
+.p2-progress-inner { padding:10px 0; }
+.p2-progress-label { font-size:12px; color:var(--t2); margin-bottom:6px; }
+.p2-bar-bg { height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+.p2-bar-fill { height:100%; background:var(--accent); border-radius:2px; transition:width .3s; }
+
+/* Filter tabs */
+.p2-filters { display:flex; gap:6px; padding:12px 20px; border-bottom:1px solid var(--border); background:var(--surface); flex-wrap:wrap; align-items:center; }
+.p2-filter-tab { padding:4px 14px; border-radius:20px; border:1px solid var(--border); background:var(--card); color:var(--t2); font-size:12px; cursor:pointer; transition:all .15s; }
+.p2-filter-tab:hover { color:var(--t1); border-color:var(--border-s); }
+.p2-filter-tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.p2-filter-sep { color:var(--t3); margin:0 4px; }
+.p2-tok-filter { padding:4px 10px; border-radius:var(--r4); background:var(--card); border:1px solid var(--border); color:var(--t1); font-size:12px; outline:none; }
+.p2-tok-filter option { background:#1A1A1A; }
+
+/* Events table */
+.p2-table-wrap { overflow-x:auto; padding:16px 20px; }
+.p2-table { width:100%; border-collapse:collapse; }
+.p2-table th { padding:8px 12px; text-align:left; font-size:11px; color:var(--t3); font-weight:600; text-transform:uppercase; letter-spacing:.4px; border-bottom:1px solid var(--border); white-space:nowrap; }
+.p2-table td { padding:10px 12px; border-bottom:1px solid var(--border); font-size:13px; }
+.p2-table tr:last-child td { border-bottom:none; }
+.p2-table tr:hover td { background:var(--card-h); }
+
+.p2-badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; }
+.p2-badge-list { background:rgba(34,197,94,.15); color:var(--green); border:1px solid rgba(34,197,94,.3); }
+.p2-badge-delist { background:rgba(239,68,68,.15); color:var(--red); border:1px solid rgba(239,68,68,.3); }
+
+.p2-days { font-size:11px; color:var(--t3); }
+.p2-days-urgent { color:var(--yellow); font-weight:600; }
+
+.p2-empty { text-align:center; padding:60px 20px; color:var(--t3); }
+.p2-empty-icon { font-size:40px; margin-bottom:10px; }
+.p2-empty-title { font-size:15px; color:var(--t2); margin-bottom:6px; }
+.p2-empty-sub { font-size:12px; }
+
+/* Scan stats */
+.p2-stats { display:flex; gap:16px; padding:10px 20px; border-bottom:1px solid var(--border); background:var(--surface); flex-wrap:wrap; }
+.p2-stat { display:flex; flex-direction:column; gap:2px; }
+.p2-stat-val { font-size:18px; font-weight:700; color:var(--t1); }
+.p2-stat-lbl { font-size:11px; color:var(--t3); }
+.p2-stat-val.green { color:var(--green); }
+.p2-stat-val.red { color:var(--red); }
+
+/* Notification banner */
+.p2-notice { margin:12px 20px; padding:10px 14px; border-radius:var(--r7); background:rgba(99,102,241,.12); border:1px solid rgba(99,102,241,.3); color:#A5B4FC; font-size:12px; line-height:1.6; }
+.p2-notice.hidden { display:none; }
+</style>
+</head>
+<body>
+
+<!-- ── Tab navigation ── -->
+<nav class="page-nav">
+  <div class="page-tab active" data-page="page1" onclick="switchPage('page1')">📊 Market Monitor</div>
+  <div class="page-tab" data-page="page2" onclick="switchPage('page2')">🔔 Listings & Delistings</div>
+</nav>
+
+<!-- ══════════════════════════════════
+     PAGE 1 — Market Monitor
+══════════════════════════════════ -->
+<div id="page1" class="page active">
+  <header>
+    <h1>⚽ Fan Token Monitor</h1>
+    <div class="header-right">
+      <span class="last-update" id="lastUpdate">—</span>
+      <button class="btn btn-primary" onclick="refreshAll()">↻ Refresh</button>
+    </div>
+  </header>
+
+  <div class="filter-bar" id="tokenFilter"></div>
+
+  <div class="ex-grid" id="exGrid"></div>
+</div>
+
+<!-- ══════════════════════════════════
+     PAGE 2 — Listings & Delistings
+══════════════════════════════════ -->
+<div id="page2" class="page">
+  <div class="p2-header">
+    <h1>🔔 Listings &amp; Delistings</h1>
+    <div class="p2-header-right">
+      <span class="p2-scan-info" id="p2LastScan">Last scan: never</span>
+      <button class="btn" onclick="startScan()" id="p2ScanBtn">▶ Run Scan</button>
+      <button class="btn" onclick="clearEvents()" style="color:var(--red);border-color:#3A1A1A">🗑 Clear Events</button>
+    </div>
+  </div>
+
+  <div class="p2-notice" id="p2Notice">
+    ℹ️ <strong>First run:</strong> Click "Run Scan" to build the baseline snapshot. No events will be generated on the first scan — subsequent scans will detect new listings and delistings automatically. Scans use the CoinGecko API (rate-limited, ~2s per token).
+  </div>
+
+  <div class="p2-progress-wrap hidden" id="p2ProgressWrap">
+    <div class="p2-progress-inner">
+      <div class="p2-progress-label" id="p2ProgressLabel">Scanning… 0 / 0</div>
+      <div class="p2-bar-bg"><div class="p2-bar-fill" id="p2BarFill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="p2-stats" id="p2Stats" style="display:none">
+    <div class="p2-stat"><span class="p2-stat-val" id="p2TotalEvents">0</span><span class="p2-stat-lbl">Total events (30d)</span></div>
+    <div class="p2-stat"><span class="p2-stat-val green" id="p2ListCount">0</span><span class="p2-stat-lbl">Listings</span></div>
+    <div class="p2-stat"><span class="p2-stat-val red" id="p2DelistCount">0</span><span class="p2-stat-lbl">Delistings</span></div>
+    <div class="p2-stat"><span class="p2-stat-val" id="p2TokenCount">0</span><span class="p2-stat-lbl">Tokens tracked</span></div>
+    <div class="p2-stat"><span class="p2-stat-val" id="p2ExCount">0</span><span class="p2-stat-lbl">Exchanges monitored</span></div>
+  </div>
+
+  <div class="p2-filters">
+    <button class="p2-filter-tab active" data-filter="all" onclick="setP2Filter('all',this)">All</button>
+    <button class="p2-filter-tab" data-filter="listing" onclick="setP2Filter('listing',this)">🟢 Listings</button>
+    <button class="p2-filter-tab" data-filter="delisting" onclick="setP2Filter('delisting',this)">🔴 Delistings</button>
+    <span class="p2-filter-sep">|</span>
+    <select class="p2-tok-filter" id="p2TokFilter" onchange="renderP2Table()">
+      <option value="">All tokens</option>
+    </select>
+    <select class="p2-tok-filter" id="p2ExFilter" onchange="renderP2Table()">
+      <option value="">All exchanges</option>
+    </select>
+  </div>
+
+  <div class="p2-table-wrap" id="p2TableWrap">
+    <div class="p2-empty">
+      <div class="p2-empty-icon">📡</div>
+      <div class="p2-empty-title">No scan data yet</div>
+      <div class="p2-empty-sub">Click "Run Scan" to start monitoring listings and delistings.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════
+   CONFIG — PAGE 1: MARKET MONITOR
+═══════════════════════════════════════════════════════════ */
+
+const TOKEN_META = {
+  ACM:   { name:'AC Milan',         club:'#C8102E', base:2.50 },
+  AFC:   { name:'Arsenal',          club:'#EF0107', base:5.00 },
+  ALA:   { name:'Atalanta',         club:'#1E6DB4', base:0.80 },
+  AM:    { name:'Atlético Mineiro', club:'#941B80', base:0.50 },
+  ARG:   { name:'Argentina',        club:'#75AADB', base:1.20 },
+  ASM:   { name:'AS Monaco',        club:'#EF3340', base:1.50 },
+  ASR:   { name:'AS Roma',          club:'#8B1A4A', base:0.90 },
+  ATM:   { name:'Atlético Madrid',  club:'#CE3524', base:2.20 },
+  BAR:   { name:'Barcelona',        club:'#A50044', base:3.00 },
+  CITY:  { name:'Man City',         club:'#6CABDD', base:3.50 },
+  CPFC:  { name:'Crystal Palace',   club:'#1B458F', base:0.80 },
+  EFC:   { name:'Everton',          club:'#003399', base:0.90 },
+  GAL:   { name:'Galatasaray',      club:'#F8A81F', base:1.80 },
+  INTER: { name:'Inter Milan',      club:'#0B1560', base:2.80 },
+  ITA:   { name:'Naz. Italia',      club:'#0066CC', base:0.70 },
+  JUV:   { name:'Juventus',         club:'#8C8A60', base:3.10 },
+  LUFC:  { name:'Leeds United',     club:'#FFCD00', base:0.70 },
+  MENGO: { name:'Flamengo',         club:'#CC0000', base:1.50 },
+  NAP:   { name:'Napoli',           club:'#087AC1', base:1.10 },
+  OG:    { name:'Team OG',          club:'#3A3A4A', base:0.60 },
+  POR:   { name:'FC Porto',         club:'#004DA8', base:1.40 },
+  PSG:   { name:'Paris SG',         club:'#004170', base:3.70 },
+  SAUBER:{ name:'Stake F1 Team',    club:'#00E701', base:1.20 },
+  SCCP:  { name:'Corinthians',      club:'#555555', base:0.60 },
+  SPURS: { name:'Tottenham',        club:'#132257', base:2.10 },
+  TRA:   { name:'Trabzonspor',      club:'#7B2333', base:0.40 },
+};
+
+const EX_META = {
+  Binance:   { spBase:.080, volBase:2_900_000, tier:1 },
+  Bybit:     { spBase:.110, volBase:1_950_000, tier:1 },
+  OKX:       { spBase:.095, volBase:2_200_000, tier:1 },
+  Bitget:    { spBase:.135, volBase:1_450_000, tier:2 },
+  'Gate.io': { spBase:.190, volBase:  870_000, tier:2 },
+  HTX:       { spBase:.200, volBase:  500_000, tier:2 },
+};
+
+const MARKET_SYMS = {
+  Binance:   { ACM:'ACMUSDT', ASR:'ASRUSDT', ATM:'ATMUSDT', BAR:'BARUSDT', CITY:'CITYUSDT', JUV:'JUVUSDT', OG:'OGUSDT', PSG:'PSGUSDT' },
+  Bybit:     { CITY:'CITYUSDT', JUV:'JUVUSDT', PSG:'PSGUSDT' },
+  Bitget:    { ACM:'ACMUSDT', ASR:'ASRUSDT', ATM:'ATMUSDT', JUV:'JUVUSDT', PSG:'PSGUSDT' },
+  OKX:       { ARG:'ARG-USDT', CITY:'CITY-USDT', GAL:'GAL-USDT', MENGO:'MENGO-USDT', POR:'POR-USDT', SPURS:'SPURS-USDT', TRA:'TRA-USDT' },
+  'Gate.io': { ACM:'ACM_USDT', AFC:'AFC_USDT', ALA:'ALA_USDT', AM:'AM_USDT', ARG:'ARG_USDT', ASR:'ASR_USDT', ATM:'ATM_USDT', CITY:'CITY_USDT', GAL:'GAL_USDT', INTER:'INTER_USDT', ITA:'ITA_USDT', JUV:'JUV_USDT', MENGO:'MENGO_USDT', NAP:'NAP_USDT', OG:'OG_USDT', POR:'POR_USDT', PSG:'PSG_USDT', SPURS:'SPURS_USDT' },
+  HTX:       { ARG:'argusdt', ATM:'atmusdt', JUV:'juvusdt', OG:'ogusdt', PSG:'psgusdt' },
+};
+
+const MM_REQS = {
+  HTX: {
+    label: 'HTX MM Requirements',
+    reqs: [
+      { label:'Avg daily volume',  value:'≥ 50,000 USDT' },
+      { label:'Min. depth per side', value:'≥ 5,000 USDT' },
+    ],
+  },
+  Bybit: {
+    label: 'Bybit MM Requirements',
+    reqs: [
+      { label:'Min. 24h volume',   value:'≥ 100,000 USDT' },
+      { label:'Spread max',        value:'≤ 0.5%' },
+      { label:'Min. depth per side', value:'≥ 10,000 USDT' },
+    ],
+  },
+  Bitget: {
+    label: 'Bitget MM Requirements',
+    reqs: [
+      { label:'Min. 24h volume',   value:'≥ 80,000 USDT' },
+      { label:'Spread max',        value:'≤ 0.8%' },
+    ],
+  },
+  'Gate.io': {
+    label: 'Gate.io MM Requirements',
+    reqs: [
+      { label:'Min. 24h volume',   value:'≥ 50,000 USDT' },
+      { label:'Spread max',        value:'≤ 1.0%' },
+      { label:'Min. depth per side', value:'≥ 5,000 USDT' },
+    ],
+  },
+};
+
+const REQS = {
+  HTX: [
+    { id:'vol50k',     short:'Vol < 50K$',    label:'Avg daily volume < 50,000 USDT (required: ≥ 50K)',
+      check:(d)=>(d.bVol+d.sVol)>=50_000 },
+    { id:'depth5k_bid',short:'Depth bid < 5K$',label:'Bid-side depth < 5,000 USDT (required: ≥ 5K/side)',
+      check:(d)=>{ if(!d.bids?.length)return true; return d.bids.slice(0,20).reduce((s,[p,q])=>s+p*q,0)>=5_000; } },
+    { id:'depth5k_ask',short:'Depth ask < 5K$',label:'Ask-side depth < 5,000 USDT (required: ≥ 5K/side)',
+      check:(d)=>{ if(!d.asks?.length)return true; return d.asks.slice(0,20).reduce((s,[p,q])=>s+p*q,0)>=5_000; } },
+  ],
+  Bybit: [
+    { id:'vol100k',    short:'Vol < 100K$',   label:'24h volume < 100,000 USDT (required: ≥ 100K)',
+      check:(d)=>(d.bVol+d.sVol)>=100_000 },
+    { id:'sp05',       short:'Spread > 0.5%', label:'Spread > 0.5% (required: ≤ 0.5%)',
+      check:(d)=>!d.spread||d.spread<=0.5 },
+    { id:'depth10k_bid',short:'Depth bid < 10K$',label:'Bid-side depth < 10,000 USDT (required: ≥ 10K/side)',
+      check:(d)=>{ if(!d.bids?.length)return true; return d.bids.slice(0,20).reduce((s,[p,q])=>s+p*q,0)>=10_000; } },
+    { id:'depth10k_ask',short:'Depth ask < 10K$',label:'Ask-side depth < 10,000 USDT (required: ≥ 10K/side)',
+      check:(d)=>{ if(!d.asks?.length)return true; return d.asks.slice(0,20).reduce((s,[p,q])=>s+p*q,0)>=10_000; } },
+  ],
+  Bitget: [
+    { id:'vol80k',     short:'Vol < 80K$',    label:'24h volume < 80,000 USDT (required: ≥ 80K)',
+      check:(d)=>(d.bVol+d.sVol)>=80_000 },
+    { id:'sp08',       short:'Spread > 0.8%', label:'Spread > 0.8% (required: ≤ 0.8%)',
+      check:(d)=>!d.spread||d.spread<=0.8 },
+  ],
+  'Gate.io': [
+    { id:'vol50k',     short:'Vol < 50K$',    label:'24h volume < 50,000 USDT (required: ≥ 50K)',
+      check:(d)=>(d.bVol+d.sVol)>=50_000 },
+    { id:'sp10',       short:'Spread > 1.0%', label:'Spread > 1.0% (required: ≤ 1.0%)',
+      check:(d)=>!d.spread||d.spread<=1.0 },
+    { id:'depth5k_bid',short:'Depth bid < 5K$',label:'Bid-side depth < 5,000 USDT (required: ≥ 5K/side)',
+      check:(d)=>{ if(!d.bids?.length)return true; return d.bids.slice(0,20).reduce((s,[p,q])=>s+p*q,0)>=5_000; } },
+    { id:'depth5k_ask',short:'Depth ask < 5K$',label:'Ask-side depth < 5,000 USDT (required: ≥ 5K/side)',
+      check:(d)=>{ if(!d.asks?.length)return true; return d.asks.slice(0,20).reduce((s,[p,q])=>s+p*q,0)>=5_000; } },
+  ],
+};
+
+/* ── API fetch helpers ── */
+async function fetchJSON(url, opts={}) {
+  const r = await fetch(url, { ...opts, signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+async function getBinanceTicker(sym) {
+  const [t, ob] = await Promise.all([
+    fetchJSON(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}`),
+    fetchJSON(`https://api.binance.com/api/v3/depth?symbol=${sym}&limit=20`),
+  ]);
+  const p = +t.lastPrice, bid = +t.bidPrice, ask = +t.askPrice;
+  return { price:p, spread:bid&&ask?(ask-bid)/bid*100:null, bVol:+t.quoteVolume/2, sVol:+t.quoteVolume/2, bids:ob.bids.map(r=>[+r[0],+r[1]]), asks:ob.asks.map(r=>[+r[0],+r[1]]) };
+}
+
+async function getBybitTicker(sym) {
+  const [t, ob] = await Promise.all([
+    fetchJSON(`https://api.bybit.com/v5/market/tickers?category=spot&symbol=${sym}`),
+    fetchJSON(`https://api.bybit.com/v5/market/orderbook?category=spot&symbol=${sym}&limit=20`),
+  ]);
+  const d = t.result?.list?.[0]; if (!d) throw new Error('no data');
+  const p=+d.lastPrice, bid=+d.bid1Price, ask=+d.ask1Price;
+  const bids=(ob.result?.b||[]).map(r=>[+r[0],+r[1]]);
+  const asks=(ob.result?.a||[]).map(r=>[+r[0],+r[1]]);
+  return { price:p, spread:bid&&ask?(ask-bid)/bid*100:null, bVol:+d.turnover24h/2, sVol:+d.turnover24h/2, bids, asks };
+}
+
+async function getOKXTicker(sym) {
+  const [t, ob] = await Promise.all([
+    fetchJSON(`https://www.okx.com/api/v5/market/ticker?instId=${sym}`),
+    fetchJSON(`https://www.okx.com/api/v5/market/books?instId=${sym}&sz=20`),
+  ]);
+  const d = t.data?.[0]; if (!d) throw new Error('no data');
+  const p=+d.last, bid=+d.bidPx, ask=+d.askPx;
+  const o=ob.data?.[0];
+  const bids=(o?.bids||[]).map(r=>[+r[0],+r[1]]);
+  const asks=(o?.asks||[]).map(r=>[+r[0],+r[1]]);
+  return { price:p, spread:bid&&ask?(ask-bid)/bid*100:null, bVol:+d.volCcy24h*p/2, sVol:+d.volCcy24h*p/2, bids, asks };
+}
+
+async function getBitgetTicker(sym) {
+  const [t, ob] = await Promise.all([
+    fetchJSON(`https://api.bitget.com/api/v2/spot/market/tickers?symbol=${sym}`),
+    fetchJSON(`https://api.bitget.com/api/v2/spot/market/orderbook?symbol=${sym}&limit=20`),
+  ]);
+  const d = t.data?.[0]; if (!d) throw new Error('no data');
+  const p=+d.lastPr, bid=+d.bidPr, ask=+d.askPr;
+  const bids=(ob.data?.bids||[]).map(r=>[+r[0],+r[1]]);
+  const asks=(ob.data?.asks||[]).map(r=>[+r[0],+r[1]]);
+  return { price:p, spread:bid&&ask?(ask-bid)/bid*100:null, bVol:+d.usdtVolume/2, sVol:+d.usdtVolume/2, bids, asks };
+}
+
+async function getGateTicker(sym) {
+  const [t, ob] = await Promise.all([
+    fetchJSON(`https://api.gateio.ws/api/v4/spot/tickers?currency_pair=${sym}`),
+    fetchJSON(`https://api.gateio.ws/api/v4/spot/order_book?currency_pair=${sym}&limit=20`),
+  ]);
+  const d = Array.isArray(t) ? t[0] : t; if (!d) throw new Error('no data');
+  const p=+d.last, bid=+d.highest_bid, ask=+d.lowest_ask;
+  const bids=(ob.bids||[]).map(r=>[+r[0],+r[1]]);
+  const asks=(ob.asks||[]).map(r=>[+r[0],+r[1]]);
+  return { price:p, spread:bid&&ask?(ask-bid)/bid*100:null, bVol:+d.quote_volume/2, sVol:+d.quote_volume/2, bids, asks };
+}
+
+async function getHTXTicker(sym) {
+  const [t, ob] = await Promise.all([
+    fetchJSON(`https://api.huobi.pro/market/detail/merged?symbol=${sym}`),
+    fetchJSON(`https://api.huobi.pro/market/depth?symbol=${sym}&type=step0&depth=20`),
+  ]);
+  const d = t.tick; if (!d) throw new Error('no data');
+  const p=d.close, bid=d.bid?.[0], ask=d.ask?.[0];
+  const bids=(ob.tick?.bids||[]).map(r=>[+r[0],+r[1]]);
+  const asks=(ob.tick?.asks||[]).map(r=>[+r[0],+r[1]]);
+  return { price:p, spread:bid&&ask?(ask-bid)/bid*100:null, bVol:+d.amount*p/2, sVol:+d.amount*p/2, bids, asks };
+}
+
+const EX_FETCHER = {
+  Binance: getBinanceTicker,
+  Bybit:   getBybitTicker,
+  OKX:     getOKXTicker,
+  Bitget:  getBitgetTicker,
+  'Gate.io': getGateTicker,
+  HTX:     getHTXTicker,
+};
+
+/* ── Formatting helpers ── */
+const fmt$ = v => v==null?'—': v>=1e6?`$${(v/1e6).toFixed(2)}M`: v>=1e3?`$${(v/1e3).toFixed(1)}K`:`$${v.toFixed(2)}`;
+const fmtP = v => v==null?'—':`$${v<0.01?v.toFixed(6):v<1?v.toFixed(4):v.toFixed(3)}`;
+const fmtSp = v => v==null?'—':`${v.toFixed(3)}%`;
+const fmtVol = v => fmt$(v);
+const fmtDep = (bids,asks) => {
+  if (!bids?.length && !asks?.length) return '—';
+  const b=bids?.slice(0,20).reduce((s,[p,q])=>s+p*q,0)||0;
+  const a=asks?.slice(0,20).reduce((s,[p,q])=>s+p*q,0)||0;
+  return `${fmt$(b)} / ${fmt$(a)}`;
+};
+
+/* ── State ── */
+let activeTokenFilter = 'ALL';
+let liveData = {}; // { ex: { tok: {price,spread,bVol,sVol,bids,asks,err} } }
+
+/* ── Page 1 Build UI ── */
+function buildTokenFilter() {
+  const bar = document.getElementById('tokenFilter');
+  const toks = ['ALL', ...Object.keys(TOKEN_META).sort()];
+  bar.innerHTML = toks.map(t =>
+    `<div class="tok-chip${t===activeTokenFilter?' active':''}" onclick="setTokenFilter('${t}')">${t}</div>`
+  ).join('');
+}
+
+function setTokenFilter(tok) {
+  activeTokenFilter = tok;
+  document.querySelectorAll('.tok-chip').forEach(c => c.classList.toggle('active', c.textContent===tok));
+  document.querySelectorAll('.tok-row').forEach(r => {
+    r.style.display = (tok==='ALL' || r.dataset.tok===tok) ? '' : 'none';
+  });
+}
+
+function buildExGrid() {
+  const grid = document.getElementById('exGrid');
+  grid.innerHTML = Object.keys(EX_META).map(ex => buildExCard(ex)).join('');
+}
+
+function buildExCard(ex) {
+  const toks = Object.keys(MARKET_SYMS[ex]||{}).sort();
+  const hasReqs = !!(REQS[ex] || MM_REQS[ex]);
+  const reqCount = (REQS[ex]?.length || MM_REQS[ex]?.reqs?.length || 0);
+  const pairCount = toks.length;
+
+  const popupItems = buildCritPopupItems(ex);
+  const popupHtml = popupItems ? `
+    <div class="th-wrap">
+      <div class="req-header-tag" onclick="toggleCriteria('${ex}',event)">
+        ⚙ ${reqCount} criteria
+      </div>
+      <div class="crit-popup" id="crit-pop-${ex.replace(/[^a-zA-Z0-9]/g,'_')}">
+        <div class="crit-popup-title">${MM_REQS[ex]?.label || ex + ' Requirements'}</div>
+        ${popupItems}
+      </div>
+    </div>` : '';
+
+  const rows = toks.map(tok => `
+    <tr class="tok-row" data-tok="${tok}" id="row-${ex.replace(/[^a-zA-Z0-9]/g,'_')}-${tok}">
+      <td><div class="tok-sym" style="border-left:2px solid ${TOKEN_META[tok]?.club||'#444'};padding-left:6px">${tok}</div>
+          <div class="tok-name">${TOKEN_META[tok]?.name||''}</div></td>
+      <td class="price-val" id="p-${ex.replace(/[^a-zA-Z0-9]/g,'_')}-${tok}"><div class="skel" style="width:60px"></div></td>
+      <td class="spread-val" id="sp-${ex.replace(/[^a-zA-Z0-9]/g,'_')}-${tok}"><div class="skel" style="width:50px"></div></td>
+      <td class="vol-val"    id="v-${ex.replace(/[^a-zA-Z0-9]/g,'_')}-${tok}"><div class="skel" style="width:60px"></div></td>
+      <td class="depth-val"  id="d-${ex.replace(/[^a-zA-Z0-9]/g,'_')}-${tok}"><div class="skel" style="width:80px"></div></td>
+      <td id="f-${ex.replace(/[^a-zA-Z0-9]/g,'_')}-${tok}"></td>
+    </tr>`).join('');
+
+  return `
+  <div class="ex-card">
+    <div class="ex-head">
+      <span class="ex-name">${ex}</span>
+      <div class="ex-meta">
+        <span class="th-note">${pairCount} pair${pairCount!==1?'s':''}</span>
+        ${popupHtml}
+      </div>
+    </div>
+    <table class="ex-table">
+      <thead><tr>
+        <th>Token</th><th>Price</th><th>Spread</th><th>Volume 24h</th><th>Depth B/A</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="ex-status" id="st-${ex.replace(/[^a-zA-Z0-9]/g,'_')}">
+      <span><span class="dot dot-yellow"></span> Loading…</span>
+    </div>
+  </div>`;
+}
+
+function buildCritPopupItems(ex) {
+  const mmr = MM_REQS[ex];
+  const r = REQS[ex];
+  const items = [];
+  if (mmr?.reqs) {
+    mmr.reqs.forEach(cr => items.push(`
+      <div class="crit-item">
+        <span class="crit-label">${cr.label}</span>
+        <span class="crit-value">${cr.value}</span>
+      </div>`));
+  } else if (r) {
+    r.forEach(cr => items.push(`
+      <div class="crit-item">
+        <span class="crit-label">${cr.label}</span>
+        <span class="crit-value">${cr.short}</span>
+      </div>`));
+  }
+  return items.length ? items.join('') : '';
+}
+
+/* ── Criteria popup toggle ── */
+let _critOpen = null;
+function toggleCriteria(ex, evt) {
+  evt.stopPropagation();
+  const id = 'crit-pop-' + ex.replace(/[^a-zA-Z0-9]/g,'_');
+  const el = document.getElementById(id);
+  if (!el) return;
+  const isOpen = el.classList.contains('open');
+  document.querySelectorAll('.crit-popup.open').forEach(p=>p.classList.remove('open'));
+  _critOpen = null;
+  if (!isOpen) { el.classList.add('open'); _critOpen = id; }
+}
+document.addEventListener('click', () => {
+  if (_critOpen) { document.getElementById(_critOpen)?.classList.remove('open'); _critOpen = null; }
+});
+
+/* ── Fetch & render ── */
+async function fetchExToken(ex, tok) {
+  const sym = MARKET_SYMS[ex]?.[tok];
+  if (!sym) return null;
+  try {
+    const d = await EX_FETCHER[ex](sym);
+    return { ...d, tok, ex };
+  } catch(e) {
+    return { err: e.message, tok, ex };
+  }
+}
+
+function updateCell(ex, tok, data) {
+  const key = ex.replace(/[^a-zA-Z0-9]/g,'_');
+  const row = document.getElementById(`row-${key}-${tok}`);
+  if (!row) return;
+
+  if (data.err) {
+    ['p','sp','v','d'].forEach(k => {
+      const el = document.getElementById(`${k}-${key}-${tok}`);
+      if (el) el.innerHTML = '<span style="color:var(--t3)">—</span>';
+    });
+    return;
+  }
+
+  // Price
+  const pEl = document.getElementById(`p-${key}-${tok}`);
+  if (pEl) pEl.innerHTML = `<span class="price-val">${fmtP(data.price)}</span>`;
+
+  // Spread
+  const spEl = document.getElementById(`sp-${key}-${tok}`);
+  const spBase = EX_META[ex]?.spBase;
+  const spHi = data.spread && spBase && data.spread > spBase*2;
+  if (spEl) spEl.innerHTML = `<span class="${spHi?'spread-hi':'spread-ok'}">${fmtSp(data.spread)}</span>`;
+
+  // Volume
+  const vEl = document.getElementById(`v-${key}-${tok}`);
+  const vol = (data.bVol||0) + (data.sVol||0);
+  if (vEl) vEl.innerHTML = `<span class="vol-val">${fmtVol(vol)}</span>`;
+
+  // Depth
+  const dEl = document.getElementById(`d-${key}-${tok}`);
+  if (dEl) dEl.innerHTML = `<span class="depth-val">${fmtDep(data.bids,data.asks)}</span>`;
+
+  // Flags
+  const reqs = REQS[ex];
+  const flagEl = document.getElementById(`f-${key}-${tok}`);
+  if (flagEl && reqs) {
+    const failed = reqs.filter(r=>!r.check(data));
+    flagEl.innerHTML = failed.map(r=>`<span class="flag-chip" title="${r.label}">${r.short}</span>`).join('');
+    if (failed.length) row.classList.add('flag-row'); else row.classList.remove('flag-row');
+  }
+}
+
+function updateStatus(ex, results) {
+  const key = ex.replace(/[^a-zA-Z0-9]/g,'_');
+  const el = document.getElementById(`st-${key}`);
+  if (!el) return;
+  const ok = results.filter(r=>!r.err).length;
+  const err = results.filter(r=>r.err).length;
+  const total = results.length;
+  el.innerHTML = `
+    <span><span class="dot dot-green"></span>${ok}/${total} live</span>
+    ${err?`<span><span class="dot dot-red"></span>${err} error${err>1?'s':''}</span>`:''}
+    <span style="margin-left:auto;color:var(--t3)">${new Date().toLocaleTimeString()}</span>`;
+}
+
+async function fetchExchange(ex) {
+  const toks = Object.keys(MARKET_SYMS[ex]||{});
+  const results = await Promise.allSettled(toks.map(tok=>fetchExToken(ex,tok)));
+  const data = results.map((r,i)=>r.status==='fulfilled'?r.value:{err:'fetch failed',tok:toks[i],ex});
+  data.forEach(d=>updateCell(ex,d.tok,d));
+  updateStatus(ex, data);
+  liveData[ex] = {};
+  data.forEach(d=>liveData[ex][d.tok]=d);
+}
+
+async function refreshAll() {
+  document.getElementById('lastUpdate').textContent='Refreshing…';
+  await Promise.allSettled(Object.keys(EX_META).map(ex=>fetchExchange(ex)));
+  document.getElementById('lastUpdate').textContent='Updated '+new Date().toLocaleTimeString();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PAGE 2 — LISTINGS & DELISTINGS (CoinGecko API)
+══════════════════════════════════════════════════════════════ */
+
+/* ── CoinGecko token ID map ── */
+const CG_TOKEN_IDS = {
+  // Main fan tokens (Chiliz)
+  PSG:    'paris-saint-germain-fan-token',
+  JUV:    'juventus-fan-token',
+  BAR:    'fc-barcelona-fan-token',
+  ACM:    'ac-milan-fan-token',
+  ATM:    'atletico-madrid-fan-token',
+  CITY:   'manchester-city-fan-token',
+  INTER:  'inter-milan-fan-token',
+  ASR:    'as-roma-fan-token',
+  GAL:    'galatasaray-fan-token',
+  NAP:    'ssc-napoli-fan-token',
+  OG:     'og-fan-token',
+  ASM:    'as-monaco-fan-token',
+  SPURS:  'tottenham-hotspur-fan-token',
+  AFC:    'arsenal-fan-token',
+  EFC:    'everton-fan-token',
+  LUFC:   'leeds-united-fan-token',
+  CPFC:   'crystal-palace-fan-token',
+  POR:    'fc-porto-fan-token',
+  TRA:    'trabzonspor-fan-token',
+  MENGO:  'flamengo-fan-token',
+  SCCP:   'sport-club-corinthians-paulista-fan-token',
+  ITA:    'nazionale-italia-fan-token',
+  ARG:    'argentina-fan-token',
+  // Additional tokens from extended watchlist
+  AVL:    'aston-villa-fan-token',
+  BENFICA:'sl-benfica-fan-token',
+  SEVILLA:'sevilla-fc-fan-token',
+  RSO:    'real-sociedad-fan-token',
+  VCF:    'valencia-cf-fan-token',
+  YBO:    'young-boys-fan-token',
+  LEV:    'levante-ud-fan-token',
+  FLU:    'fluminense-fan-token',
+  VASCO:  'vasco-da-gama-fan-token',
+  BAHIA:  'bahia-fan-token',
+  VERDAO: 'palmeiras-fan-token',
+  GALO:   'atletico-mineiro-fan-token',
+  SPFC:   'sao-paulo-fc-fan-token',
+  MENGO2: 'flamengo-fan-token', // alias
+  FOR:    'fortaleza-esporte-clube-fan-token',
+  MIBR:   'made-in-brazil-fan-token',
+  PERSIJA:'persija-jakarta-fan-token',
+  JDT:    'johor-darul-tazim-fc-fan-token',
+  GOZ:    'goztepe-fan-token',
+  EFC2:   'everton-fan-token',
+  SAFA:   'south-africa-fan-token',
+  SFA:    'scotland-fan-token',
+  BELG:   'belgium-national-football-team-fan-token',
+  SPAIN:  'spain-national-football-team-fan-token',
+  TH:     'thailand-national-football-team-fan-token',
+  UFC:    'ufc-fan-token',
+  ROUSH:  'roush-fenway-racing-fan-token',
+  SHARKS: 'san-jose-sharks-fan-token',
+  PEPPER: 'pepper-fan-token',
+  SAM:    'sam-fan-token',
+  DZG:    'duzce-spor-fan-token',
+  LEG:    'leg-fan-token',
+  ALL:    'allsvenskan-fan-token',
+  APL:    'aplha-fan-token',
+  BFC:    'bfc-fan-token',
+  DOJO:   'dojo-fan-token',
+  FLU2:   'flu-fan-token',
+  MFC:    'millwall-fc-fan-token',
+  PFL:    'pfl-fan-token',
+  SACI:   'saci-fan-token',
+  STV:    'st-vincent-fan-token',
+  YBO2:   'yb-fan-token',
+  CHZ:    'chiliz',
+  ALA:    'atalanta-fan-token',
+  AM:     'atletico-mineiro-fan-token',
+  SAUBER: 'stake-f1-team-fan-token',
+};
+
+/* Full watchlist for Page 2 (60 tokens) */
+const P2_WATCH_TOKENS = [
+  'PSG','JUV','BAR','ACM','ATM','CITY','INTER','ASR','GAL','NAP',
+  'OG','ASM','SPURS','AFC','EFC','LUFC','CPFC','POR','TRA','MENGO',
+  'SCCP','ITA','ARG','AVL','BENFICA','SEVILLA','RSO','VCF','YBO','LEV',
+  'FLU','VASCO','BAHIA','VERDAO','GALO','SPFC','FOR','MIBR','PERSIJA',
+  'JDT','GOZ','SAFA','SFA','BELG','SPAIN','TH','UFC','ROUSH','SHARKS',
+  'PEPPER','DZG','LEG','ALL','APL','BFC','DOJO','MFC','PFL','SACI','CHZ',
+].filter(t => CG_TOKEN_IDS[t]); // only ones with a known CG ID
+
+/* ── CoinGecko exchange ID → display name ── */
+const CG_EX_MAP = {
+  'binance':             'Binance',
+  'bybit_spot':          'Bybit',
+  'okex':                'OKX',
+  'bitget':              'Bitget',
+  'gate':                'Gate.io',
+  'huobi':               'HTX',
+  'kucoin':              'KuCoin',
+  'kraken':              'Kraken',
+  'coinbase_exchange':   'Coinbase',
+  'crypto_com':          'Crypto.com',
+  'bitstamp':            'Bitstamp',
+  'bitfinex':            'Bitfinex',
+  'gemini':              'Gemini',
+  'poloniex':            'Poloniex',
+  'bingx':               'BingX',
+  'mexc':                'MEXC',
+  'lbank':               'LBank',
+  'htx':                 'HTX',
+  'whitebit':            'WhiteBIT',
+  'xt':                  'XT.COM',
+  'bitrue':              'Bitrue',
+  'digifinex':           'DigiFinex',
+  'phemex':              'Phemex',
+  'coinsph':             'Coins.ph',
+  'upbit':               'Upbit',
+  'bithumb':             'Bithumb',
+  'coinone':             'Coinone',
+  'korbit':              'Korbit',
+  'bitvavo':             'Bitvavo',
+  'blockchain_com':      'Blockchain.com',
+  'bitpanda':            'BitPanda',
+  'coindcx':             'CoinDCX',
+  'wazirx':              'WazirX',
+  'mudrex':              'Mudrex',
+  'zebpay':              'ZebPay',
+  'giottus':             'Giottus',
+  'bitbns':              'Bitbns',
+  'unocoin':             'Unocoin',
+  'indodax':             'Indodax',
+  'tokocrypto':          'TokoCrypto',
+  'novaex':              'NovaDAX',
+  'foxbit':              'Foxbit',
+  'bitcoiva':            'Bitcoiva',
+  'ascendex':            'AscendEx',
+  'hotcoin_global':      'Hotcoin',
+  'coinstore':           'Coinstore',
+  'blovk':               'BloFin',
+  'blofin':              'BloFin',
+  'bitbank':             'Bitbank',
+  'probit':              'ProBit Global',
+  'latoken':             'LATOKEN',
+  'hitbtc':              'HitBTC',
+  'exmo':                'EXMO',
+  'cex':                 'CEX.IO',
+  'bibox':               'Bibox',
+  'bigone':              'BigONE',
+  'coinw':               'CoinW',
+  'tapbit':              'Tapbit',
+  'superex':             'SuperEx',
+  'toobit':              'Toobit',
+  'bydfi':               'BYDFi',
+  'ourbit':              'Ourbit',
+  'weex':                'WEEX',
+  'hibt':                'Hibt',
+  'kcex':                'KCEX',
+  'fameex':              'FameEX',
+  'bitunix':             'Bitunix',
+  'btse':                'BTSE',
+  'orangex':             'OrangeX',
+  'woo_network':         'WOO X',
+  'dex_trade':           'Dex-Trade',
+  'bilaxy':              'Bilaxy',
+  'bullish':             'Bullish',
+  'biconomy':            'Biconomy.com',
+  'bitso':               'Bitso',
+  'bit2me':              'Bit2Me',
+  'pionex':              'Pionex',
+  'ace_exchange':        'ACE',
+  'azbit':               'Azbit',
+  'batonex':             'Batonex',
+  'biking':              'BiKing',
+  'bitbuy':              'BitBuy',
+  'bitcastle':           'Bitcastle',
+  'bitdelta':            'BitDelta',
+  'bitkub':              'Bitkub',
+  'bluebit':             'BlueBit',
+  'blynex':              'Blynex',
+  'btcc':                'BTCC',
+  'bvox':                'BVOX',
+  'coincheck':           'Coincheck',
+  'coinmetro':           'Coinmetro',
+  'coinspot':            'Coinspot',
+  'coinup':              'CoinUp.io',
+  'degatexyz':           'DeGate',
+  'digitalexchange':     'digitalexchange.id',
+  'floq':                'Floq',
+  'globedx':             'Globe Derivative Exchange',
+  'grovex':              'GroveX',
+  'icrypex':             'ICRYPEX',
+  'kanga_exchange':      'Kanga',
+  'bitexen':             'Bitexen',
+  'binance_tr':          'Binance TR',
+  'binance_th':          'Binance TH',
+  'binance_us':          'Binance.US',
+  'btcturk':             'BtcTurk',
+  'coinjar':             'CoinJar',
+  'mandala_exchange':    'Mandala Exchange',
+  'mgbx':                'MGBX',
+  'niza_global':         'Niza Global',
+  'nominex':             'NexDAX',
+  'onus_pro':            'ONUS Pro',
+  'pancakeswap_new':     'PancakeSwap',
+  'paybito':             'PayBito',
+  'pointpay':            'PointPay',
+  'qmall':               'Qmall Exchange',
+  'safebit':             'SAFEbit',
+  'smardex':             'SmarDex',
+  'spirex':              'SpireX',
+  'tgex':                'TGEX',
+  'tokenize_xchange':    'Tokenize Xchange',
+  'trubit':              'TruBit Pro Exchange',
+  'upbit_indonesia':     'Upbit Indonesia',
+  'uzx':                 'UZX',
+  'vindax':              'VinDAX',
+  'voox_exchange':       'VOOX Exchange',
+  'websea':              'Websea',
+  'zke':                 'ZKE',
+  'zondacrypto':         'zondacrypto',
+  'cube_exchange':       'Cube',
+  'changelly':           'Changelly PRO',
+  'changenow':           'ChangeNOW',
+  'midas':               'Midas',
+  'icpswap':             'ICPSwap',
+  'local_trade':         'LocalTrade',
+  'gleec':               'Gleec BTC',
+  'bitazza':             'Bitazza',
+  'bitcoin_me':          'Bitcoin.me',
+  'webot':               'Webot',
+  'fmfw':                'FMFW.io',
+  'b2z':                 'B2Z Exchange',
+  'bitmarkets':          'BITmarkets',
+  'bitlo':               'Bitlo',
+  'kayen':               'Kayen',
+  'kewl':                'KEWL',
+  'paribu':              'Paribu',
+  'mercado_bitcoin':     'Mercado Bitcoin',
+  'btcmarket':           'BTC Markets',
+};
+
+/* ── Storage keys ── */
+const LS_SNAPSHOT = 'ftm_p2_snapshot_v1';
+const LS_EVENTS   = 'ftm_p2_events_v1';
+const LS_LASTSCAN = 'ftm_p2_lastscan_v1';
+const LS_SCANCOUNT= 'ftm_p2_scancount_v1';
+const EVENT_TTL   = 30 * 24 * 3600 * 1000; // 30 days
+
+/* ── State ── */
+let p2Filter    = 'all';
+let p2Scanning  = false;
+let p2Events    = [];
+let p2Snapshot  = {};
+
+function loadP2State() {
+  try { p2Events   = JSON.parse(localStorage.getItem(LS_EVENTS)||'[]'); } catch{p2Events=[];}
+  try { p2Snapshot = JSON.parse(localStorage.getItem(LS_SNAPSHOT)||'{}'); } catch{p2Snapshot={};}
+  // Expire old events
+  const now = Date.now();
+  p2Events = p2Events.filter(e => now - e.ts < EVENT_TTL);
+  saveEvents();
+}
+
+function saveEvents()   { try{ localStorage.setItem(LS_EVENTS,   JSON.stringify(p2Events));   }catch{} }
+function saveSnapshot() { try{ localStorage.setItem(LS_SNAPSHOT, JSON.stringify(p2Snapshot)); }catch{} }
+
+function hasBaseline() {
+  return Object.keys(p2Snapshot).length > 0;
+}
+
+function getLastScan() {
+  return localStorage.getItem(LS_LASTSCAN);
+}
+
+function getScanCount() {
+  return parseInt(localStorage.getItem(LS_SCANCOUNT)||'0');
+}
+
+/* ── Rate-limited CoinGecko fetch ── */
+async function cgFetch(cgId) {
+  const url = `https://api.coingecko.com/api/v3/coins/${cgId}/tickers?include_exchange_logo=false&order=volume_desc&depth=false`;
+  const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  if (r.status === 429) throw new Error('rate_limited');
+  if (!r.ok) throw new Error(`http_${r.status}`);
+  return r.json();
+}
+
+function delay(ms) { return new Promise(res=>setTimeout(res,ms)); }
+
+/* ── Scan logic ── */
+async function startScan() {
+  if (p2Scanning) return;
+  p2Scanning = true;
+
+  const btn = document.getElementById('p2ScanBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Scanning…';
+
+  const progressWrap = document.getElementById('p2ProgressWrap');
+  const progressLabel = document.getElementById('p2ProgressLabel');
+  const barFill = document.getElementById('p2BarFill');
+  progressWrap.classList.remove('hidden');
+
+  const isFirst = !hasBaseline();
+  const tokens = P2_WATCH_TOKENS;
+  const total = tokens.length;
+
+  const newSnapshot = {};
+  let scanned = 0;
+  let rateLimitHits = 0;
+
+  for (const sym of tokens) {
+    const cgId = CG_TOKEN_IDS[sym];
+    if (!cgId) { scanned++; continue; }
+
+    progressLabel.textContent = `Scanning ${sym} (${scanned+1}/${total})…`;
+    barFill.style.width = `${Math.round(scanned/total*100)}%`;
+
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        const data = await cgFetch(cgId);
+        const tickers = data.tickers || [];
+        const exchanges = new Set();
+
+        for (const tk of tickers) {
+          const mktId = tk.market?.identifier;
+          if (!mktId) continue;
+          const dispName = CG_EX_MAP[mktId] || mktId;
+          // Only include if trading against USDT/USD/BUSD
+          const target = (tk.target||'').toUpperCase();
+          if (['USDT','USD','BUSD','USDC'].includes(target)) {
+            exchanges.add(dispName);
+          }
+        }
+
+        newSnapshot[sym] = [...exchanges].sort();
+        break;
+      } catch(e) {
+        if (e.message === 'rate_limited') {
+          rateLimitHits++;
+          progressLabel.textContent = `Rate limited — waiting 30s… (${sym} ${scanned+1}/${total})`;
+          await delay(30000);
+          retries--;
+        } else {
+          // Other error — skip token
+          newSnapshot[sym] = p2Snapshot[sym] || [];
+          break;
+        }
+      }
+    }
+
+    scanned++;
+    // Delay between calls to respect rate limit (2s)
+    if (scanned < total) await delay(2000);
+  }
+
+  barFill.style.width = '100%';
+  progressLabel.textContent = `Scan complete! ${total} tokens checked.`;
+
+  // Compare snapshots (only if we had a previous baseline)
+  if (!isFirst) {
+    const newEvents = detectChanges(p2Snapshot, newSnapshot);
+    p2Events.push(...newEvents);
+    // Re-expire
+    const now = Date.now();
+    p2Events = p2Events.filter(e => now - e.ts < EVENT_TTL);
+    saveEvents();
+  }
+
+  // Save new snapshot as baseline
+  p2Snapshot = newSnapshot;
+  saveSnapshot();
+
+  const now = new Date().toLocaleString();
+  localStorage.setItem(LS_LASTSCAN, now);
+  localStorage.setItem(LS_SCANCOUNT, String(getScanCount()+1));
+
+  document.getElementById('p2LastScan').textContent = `Last scan: ${now}`;
+
+  // Update notice
+  const notice = document.getElementById('p2Notice');
+  if (isFirst) {
+    notice.className = 'p2-notice';
+    notice.innerHTML = `✅ <strong>Baseline created!</strong> ${Object.keys(newSnapshot).length} tokens indexed across multiple exchanges. Next scan will detect changes automatically.`;
+  } else {
+    notice.className = 'p2-notice hidden';
+  }
+
+  // Hide progress after delay
+  setTimeout(() => progressWrap.classList.add('hidden'), 2000);
+
+  p2Scanning = false;
+  btn.disabled = false;
+  btn.textContent = '↻ Rescan';
+
+  populateP2Filters();
+  updateP2Stats();
+  renderP2Table();
+}
+
+function detectChanges(oldSnap, newSnap) {
+  const events = [];
+  const now = Date.now();
+  const allTokens = new Set([...Object.keys(oldSnap), ...Object.keys(newSnap)]);
+
+  for (const sym of allTokens) {
+    const oldExs = new Set(oldSnap[sym] || []);
+    const newExs = new Set(newSnap[sym] || []);
+
+    // New listings (in new but not in old)
+    for (const ex of newExs) {
+      if (!oldExs.has(ex)) {
+        events.push({ id: `${sym}-${ex}-list-${now}`, sym, ex, type:'listing', ts: now });
+      }
+    }
+
+    // Delistings (in old but not in new)
+    for (const ex of oldExs) {
+      if (!newExs.has(ex)) {
+        events.push({ id: `${sym}-${ex}-delist-${now}`, sym, ex, type:'delisting', ts: now });
+      }
+    }
+  }
+
+  return events;
+}
+
+function clearEvents() {
+  if (!confirm('Clear all listing/delisting events? The baseline snapshot will be kept.')) return;
+  p2Events = [];
+  saveEvents();
+  renderP2Table();
+  updateP2Stats();
+}
+
+/* ── Filter UI ── */
+function setP2Filter(f, el) {
+  p2Filter = f;
+  document.querySelectorAll('.p2-filter-tab').forEach(t=>t.classList.toggle('active', t.dataset.filter===f));
+  renderP2Table();
+}
+
+function populateP2Filters() {
+  const tokSel = document.getElementById('p2TokFilter');
+  const exSel  = document.getElementById('p2ExFilter');
+  const toks = [...new Set(p2Events.map(e=>e.sym))].sort();
+  const exes = [...new Set(p2Events.map(e=>e.ex))].sort();
+
+  tokSel.innerHTML = '<option value="">All tokens</option>' + toks.map(t=>`<option value="${t}">${t}</option>`).join('');
+  exSel.innerHTML  = '<option value="">All exchanges</option>' + exes.map(e=>`<option value="${e}">${e}</option>`).join('');
+}
+
+function updateP2Stats() {
+  const stats = document.getElementById('p2Stats');
+  const listings = p2Events.filter(e=>e.type==='listing');
+  const delistings = p2Events.filter(e=>e.type==='delisting');
+  const tokCount = Object.keys(p2Snapshot).length;
+  const exCount = new Set(Object.values(p2Snapshot).flat()).size;
+
+  document.getElementById('p2TotalEvents').textContent = p2Events.length;
+  document.getElementById('p2ListCount').textContent   = listings.length;
+  document.getElementById('p2DelistCount').textContent = delistings.length;
+  document.getElementById('p2TokenCount').textContent  = tokCount;
+  document.getElementById('p2ExCount').textContent     = exCount;
+
+  stats.style.display = tokCount > 0 ? 'flex' : 'none';
+}
+
+function renderP2Table() {
+  const wrap = document.getElementById('p2TableWrap');
+  const tokF = document.getElementById('p2TokFilter').value;
+  const exF  = document.getElementById('p2ExFilter').value;
+
+  let filtered = p2Events.filter(e => {
+    if (p2Filter !== 'all' && e.type !== p2Filter) return false;
+    if (tokF && e.sym !== tokF) return false;
+    if (exF  && e.ex  !== exF)  return false;
+    return true;
+  });
+
+  // Sort newest first
+  filtered.sort((a,b)=>b.ts-a.ts);
+
+  if (filtered.length === 0) {
+    const hasBaseline = Object.keys(p2Snapshot).length > 0;
+    wrap.innerHTML = `
+      <div class="p2-empty">
+        <div class="p2-empty-icon">${hasBaseline ? '🔍' : '📡'}</div>
+        <div class="p2-empty-title">${hasBaseline ? 'No events yet' : 'No scan data yet'}</div>
+        <div class="p2-empty-sub">${hasBaseline
+          ? 'No listings or delistings detected in the last 30 days matching the current filter.'
+          : 'Click "Run Scan" to start monitoring listings and delistings.'}</div>
+      </div>`;
+    return;
+  }
+
+  const now = Date.now();
+  const rows = filtered.map(e => {
+    const age = now - e.ts;
+    const daysAgo = Math.floor(age / 86400000);
+    const daysLeft = 30 - daysAgo;
+    const dateStr = new Date(e.ts).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    const timeStr = new Date(e.ts).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+    const meta = TOKEN_META[e.sym];
+    const isUrgent = daysLeft <= 5;
+    const badge = e.type === 'listing'
+      ? `<span class="p2-badge p2-badge-list">LISTING</span>`
+      : `<span class="p2-badge p2-badge-delist">DELISTING</span>`;
+
+    return `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            ${meta?.club ? `<div style="width:3px;height:32px;border-radius:2px;background:${meta.club}"></div>` : ''}
+            <div>
+              <div style="font-weight:700;color:var(--t1)">${e.sym}</div>
+              <div style="font-size:11px;color:var(--t3)">${meta?.name||''}</div>
+            </div>
+          </div>
+        </td>
+        <td style="color:var(--t1)">${e.ex}</td>
+        <td>${badge}</td>
+        <td><div style="color:var(--t2)">${dateStr}</div><div style="font-size:11px;color:var(--t3)">${timeStr}</div></td>
+        <td><span class="${isUrgent?'p2-days-urgent':'p2-days'}">${daysLeft}d left</span></td>
+      </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <table class="p2-table">
+      <thead>
+        <tr>
+          <th>Token</th>
+          <th>Exchange</th>
+          <th>Type</th>
+          <th>Detected</th>
+          <th>Expires</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+/* ── Page switch ── */
+function switchPage(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.page-tab').forEach(t=>t.classList.toggle('active', t.dataset.page===id));
+  document.getElementById(id).classList.add('active');
+
+  if (id === 'page2') {
+    const ls = getLastScan();
+    document.getElementById('p2LastScan').textContent = ls ? `Last scan: ${ls}` : 'Last scan: never';
+    populateP2Filters();
+    updateP2Stats();
+    renderP2Table();
+
+    // Show/hide notice
+    const notice = document.getElementById('p2Notice');
+    if (hasBaseline()) notice.className = 'p2-notice hidden';
+    else notice.className = 'p2-notice';
+  }
+}
+
+/* ── Boot ── */
+function init() {
+  buildTokenFilter();
+  buildExGrid();
+  refreshAll();
+  loadP2State();
+  setInterval(refreshAll, 30000);
+}
+
+init();
+</script>
+</body>
+</html>
